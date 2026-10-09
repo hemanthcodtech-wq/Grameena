@@ -1,0 +1,366 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap');
+
+:root {
+  --primary-color: #1a4f1a; /* Dark Green */
+  --secondary-color: #f7a21b; /* Orange/Yellow for buttons */
+  --bg-color: #fdfaf1; /* Warm off-white background */
+  --text-dark: #2d3748;
+  --text-light: #4a5568;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+  color: var(--primary-color);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 25px;
+  list-style: none;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.nav-icons {
+  display: flex;
+  gap: 15px;
+}
+
+.nav-icons span {
+  cursor: pointer;
+  font-size: 20px;
+}
+
+/* Hero Section */
+.hero {
+  height: 500px;
+  background: url('https://images.unsplash.com/photo-1595159040375-9e6ef7be45c6?q=80&w=2070&auto=format&fit=crop') no-resolution center/cover;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 50px;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background-color: var(--secondary-color);
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+/* Categories */
+.categories {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.category-card {
+  background: #f1ebd8;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: transform 0.3s;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+}
+
+.category-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.category-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+}
+
+.category-card p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+.category-card a {
+  text-decoration: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Bestselling */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.section-header h2 {
+  font-size: 2rem;
+}
+
+.section-header a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+  margin-bottom: 60px;
+}
+
+.product-card {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  transition: box-shadow 0.3s;
+}
+
+.product-card:hover {
+  box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+}
+
+.heart-icon {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.product-img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin: 0 auto 15px;
+}
+
+.product-card h4 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-dark);
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+.stars {
+  color: var(--secondary-color);
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.price {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+
+.btn-add {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+/* Story Section */
+.story-section {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  background: #f6eedb;
+  border-radius: 15px;
+  padding: 40px;
+  margin-bottom: 50px;
+}
+
+.story-content {
+  flex: 1;
+}
+
+.story-content h2 {
+  font-size: 2.2rem;
+  margin-bottom: 15px;
+}
+
+.story-content p {
+  color: var(--text-light);
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.story-img {
+  flex: 1;
+  height: 300px;
+  background: url('https://images.unsplash.com/photo-1574883445657-37ed5af074d2?q=80&w=2070&auto=format&fit=crop') center/cover;
+  border-radius: 12px;
+}
+
+/* Features */
+.features {
+  display: flex;
+  justify-content: space-around;
+  padding: 30px 0;
+  border-top: 1px solid #e2d9c3;
+  border-bottom: 1px solid #e2d9c3;
+  margin-bottom: 60px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 60px 0 20px;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.footer-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.footer-links h4 {
+  font-family: 'Poppins', sans-serif;
+  color: white;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.footer-links ul {
+  list-style: none;
+}
+
+.footer-links li {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+@media (max-width: 768px) {
+  .categories, .products-grid {
+    grid-template-columns: 1fr;
+  }
+  .story-section {
+    flex-direction: column;
+  }
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,0 +1,51 @@
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background-color: #F8B319;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999999;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #F8B319;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999998;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+* {
+  cursor: none !important;
+}
+
+body, html, #root {
+  cursor: none !important;
+}
+
+a, button, [role="button"], input, select, textarea, .admin-card, .admin-sidebar-link {
+  cursor: none !important;
+}
+
+@media (max-width: 768px) {
+  body {
+    cursor: auto;
+  }
+  
+  a, button, [role="button"], input, select, textarea {
+    cursor: pointer !important;
+  }
+  
+  .cursor-dot, .cursor-ring {
+    display: none !important;
+  }
+}
