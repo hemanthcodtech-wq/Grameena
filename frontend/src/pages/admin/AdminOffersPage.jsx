@@ -16,7 +16,7 @@ const AdminOffersPage = () => {
 
   const fetchOffers = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/offers', {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/offers`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setOffers(res.data);
@@ -39,7 +39,7 @@ const AdminOffersPage = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
       } else {
-        await axios.post('http://localhost:5000/api/admin/offers', formData, {
+        await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/offers`, formData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
       }

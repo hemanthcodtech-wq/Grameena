@@ -30,7 +30,7 @@ const ProductDetailsPage = () => {
     setLoading(true);
     try {
       // Since there's no specific GET /products/:id in the public API, we'll fetch all and filter
-      const res = await axios.get('http://localhost:5000/api/products');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`);
       const allProducts = res.data;
       const current = allProducts.find(p => p.id === parseInt(id));
       if (!current) {
@@ -40,7 +40,7 @@ const ProductDetailsPage = () => {
       setProduct(current);
       setMainImg(current.image_url);
 
-      const catRes = await axios.get('http://localhost:5000/api/products/categories/all');
+      const catRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`);
       const cat = catRes.data.find(c => c.id === current.category_id);
       setCategory(cat);
 

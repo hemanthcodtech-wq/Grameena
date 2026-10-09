@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Plus, Edit2, Trash2, Image as ImageIcon, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API = 'http://localhost:5000/api';
+const API = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api`;
 
 const AdminBannersPage = () => {
   const [banners, setBanners] = useState([]);

@@ -45,7 +45,7 @@ const CheckoutPage = () => {
       setIsProcessing(true);
       
       // 1. Create order in backend
-      const res = await axios.post('http://localhost:5000/api/payment/create-order', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/create-order`, {
         amount: total,
         items: cartItems,
         address: address
@@ -54,7 +54,7 @@ const CheckoutPage = () => {
       const orderData = res.data;
 
       // 1.5 Fetch key
-      const keyRes = await axios.get('http://localhost:5000/api/payment/get-key');
+      const keyRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/get-key`);
 
       // 2. Initialize Razorpay
       const options = {
@@ -68,7 +68,7 @@ const CheckoutPage = () => {
         handler: async function (response) {
           try {
             // 3. Verify Payment
-            const verifyRes = await axios.post('http://localhost:5000/api/payment/verify-payment', {
+            const verifyRes = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/verify-payment`, {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,

@@ -32,9 +32,9 @@ const HomePage = () => {
     const fetchHomeData = async () => {
       try {
         const [catRes, prodRes, bannerRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/products/categories/all'),
-          axios.get('http://localhost:5000/api/products'),
-          axios.get('http://localhost:5000/api/public/banners')
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`),
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`),
+          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/public/banners`)
         ]);
         
         const colors = ['bg-orange-50', 'bg-yellow-50', 'bg-green-50', 'bg-red-50', 'bg-blue-50'];

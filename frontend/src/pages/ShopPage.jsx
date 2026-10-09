@@ -9,7 +9,7 @@ const ShopPage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/products');
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`);
         // Filter out inactive products
         setProducts(res.data.filter(p => p.is_active));
       } catch (error) {

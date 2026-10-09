@@ -24,7 +24,7 @@ const AdminCategoriesPage = () => {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/categories', {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/categories`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCategories(res.data);
@@ -51,7 +51,7 @@ const AdminCategoriesPage = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('http://localhost:5000/api/admin/categories', payload, {
+        await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/categories`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }

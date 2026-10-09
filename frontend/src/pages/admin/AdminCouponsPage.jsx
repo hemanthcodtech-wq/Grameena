@@ -19,7 +19,7 @@ const AdminCouponsPage = () => {
 
   const fetchCoupons = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/coupons', {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/coupons`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setCoupons(res.data);
@@ -42,7 +42,7 @@ const AdminCouponsPage = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
       } else {
-        await axios.post('http://localhost:5000/api/admin/coupons', formData, {
+        await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/coupons`, formData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
       }
