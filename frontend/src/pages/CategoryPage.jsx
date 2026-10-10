@@ -50,8 +50,11 @@ const CategoryPage = () => {
       // Filter products
       const filtered = prodRes.data.filter(p => {
         if (!p.is_active) return false;
-        // Either match by category_id if we found the cat, or by string parsing
-        if (cat) return p.category_id === cat.id;
+        
+        // Match by category_id if available
+        if (cat && p.category_id === cat.id) return true;
+        
+        // Fallback to text matching
         const dbCategory = (p.category || '').toLowerCase();
         return dbCategory.includes(searchParam) || searchParam.includes(dbCategory);
       });
