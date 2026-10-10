@@ -91,6 +91,7 @@ const ProductCard = ({ prod, idx, badge }) => {
       </div>
       
       <div className="flex-1 flex flex-col px-1 sm:px-2">
+        {prod.category && <p className="text-[9px] sm:text-[10px] text-[#F8B319] font-bold uppercase tracking-wider mb-0.5">{prod.category}</p>}
         <h3 className="font-bold text-[#113C2B] text-sm sm:text-xl mb-0.5 sm:mb-1 font-serif line-clamp-1">{prod.name}</h3>
         <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 line-clamp-1">{prod.description}</p>
         

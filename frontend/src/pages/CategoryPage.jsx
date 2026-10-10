@@ -38,7 +38,7 @@ const CategoryPage = () => {
     try {
       const [prodRes, catRes] = await Promise.all([
         axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`),
-        axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/categories`)
+        axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`)
       ]);
 
       const searchParam = categoryName.toLowerCase().replace(/-/g, ' ');
