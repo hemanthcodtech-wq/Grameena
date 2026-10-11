@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Star, ArrowRight, ShoppingBag, Leaf, ShieldCheck, Truck, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 import heroImg from '../assets/hero.jpg';
+import { useCachedApi } from '../hooks/useCachedApi';
 
 // Animation Variants
 const fadeInUp = {
@@ -21,40 +22,22 @@ const staggerContainer = {
 // ProductCard extracted to components/ProductCard.jsx
 
 const HomePage = () => {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [banners, setBanners] = useState([]);
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const { data: rawCategories, loading: catLoading } = useCachedApi('gram_cat', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`, []);
+  const { data: products, loading: prodLoading } = useCachedApi('gram_prod', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`, []);
+  const { data: banners, loading: banLoading } = useCachedApi('gram_ban', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/public/banners`, []);
 
-  useEffect(() => {
-    const fetchHomeData = async () => {
-      try {
-        const [catRes, prodRes, bannerRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`),
-          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`),
-          axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/public/banners`)
-        ]);
-        
-        const colors = ['bg-orange-50', 'bg-yellow-50', 'bg-green-50', 'bg-red-50', 'bg-blue-50'];
-        const mappedCategories = catRes.data.map((c, i) => ({
-          ...c,
-          color: colors[i % colors.length]
-        }));
-        
-        setCategories(mappedCategories);
-        setProducts(prodRes.data);
-        setBanners(bannerRes.data);
-      } catch (error) {
-        console.error('Error fetching homepage data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchHomeData();
-  }, []);
+  const categories = useMemo(() => {
+    const colors = ['bg-orange-50', 'bg-yellow-50', 'bg-green-50', 'bg-red-50', 'bg-blue-50'];
+    return (rawCategories || []).map((c, i) => ({
+      ...c,
+      color: colors[i % colors.length]
+    }));
+  }, [rawCategories]);
+
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const { addToCart } = useCart();
+  const loading = catLoading || prodLoading || banLoading;
 
   // Simple Auto-Slider for Banners
   useEffect(() => {
@@ -76,6 +59,9 @@ const HomePage = () => {
     { text: "The mango pickle is just amazing! Tastes exactly like homemade. Reminds me of my grandmother's recipe.", name: "Sridevi", location: "Hyderabad" },
     { text: "Pure and natural oils. I can smell the authenticity as soon as I open the bottle. Highly recommended!", name: "Ramesh", location: "Vijayawada" },
     { text: "Crispy and tasty snacks. My family loves it. Best snacks I've ever ordered online.", name: "Lakshmi", location: "Guntur" },
+    { text: "The gongura pickle brings back childhood memories. Perfectly spiced and packed with care. Excellent quality!", name: "Prasad", location: "Bengaluru" },
+    { text: "We switched to Grameena Bharatham's groundnut oil last month. The aroma is heavenly and the food tastes much better.", name: "Anitha", location: "Chennai" },
+    { text: "Absolutely loved the traditional Andhra sweets and Chekkalu. Fast delivery and premium packaging.", name: "Kiran", location: "Visakhapatnam" },
   ];
 
   return (
@@ -154,6 +140,7 @@ const HomePage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, duration: 0.6 }}
+                onClick={() => navigate(`/category/${cat.name.toLowerCase().replace(/ /g, '-')}`)}
                 className="group cursor-pointer flex flex-col items-center"
               >
                 {/* Circular Image Container */}
@@ -287,37 +274,35 @@ const HomePage = () => {
           <p className="text-gray-500 text-lg">Real Taste. Real Smiles.</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((test, i) => (
-            <motion.div 
-              key={i} 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="bg-white p-10 rounded-[32px] shadow-sm border border-[#e8dfc8] relative pt-12"
-            >
-              <Quote className="absolute top-8 left-8 w-10 h-10 text-[#F8B319]/20 rotate-180" />
-              <div className="flex items-center space-x-1 mb-6 relative z-10">
-                {[...Array(5)].map((_, j) => (
-                  <Star key={j} className="w-5 h-5 fill-[#F8B319] text-[#F8B319]" />
-                ))}
-              </div>
-              <p className="text-gray-600 font-medium mb-8 italic text-lg leading-relaxed relative z-10">
-                "{test.text}"
-              </p>
-              
-              <div className="flex items-center gap-4 mt-auto border-t border-gray-100 pt-6">
-                <div className="w-12 h-12 rounded-full bg-[#113C2B] text-white flex items-center justify-center font-bold text-xl font-serif">
-                  {test.name.charAt(0)}
+        <div className="relative overflow-hidden w-full group py-4">
+          <div className="flex w-max animate-marquee space-x-6 md:space-x-8 hover:[animation-play-state:paused]">
+            {[...testimonials, ...testimonials].map((test, i) => (
+              <div 
+                key={i} 
+                className="w-[300px] md:w-[380px] flex-shrink-0 bg-white p-8 md:p-10 rounded-[32px] shadow-sm border border-[#e8dfc8] relative pt-12 flex flex-col"
+              >
+                <Quote className="absolute top-6 left-6 w-8 h-8 md:w-10 md:h-10 text-[#F8B319]/20 rotate-180" />
+                <div className="flex items-center space-x-1 mb-6 relative z-10">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 md:w-5 md:h-5 fill-[#F8B319] text-[#F8B319]" />
+                  ))}
                 </div>
-                <div>
-                  <p className="text-lg font-bold text-[#113C2B]">{test.name}</p>
-                  <p className="text-sm text-gray-500">{test.location}</p>
+                <p className="text-gray-600 font-medium mb-8 italic text-base md:text-lg leading-relaxed relative z-10 whitespace-normal flex-1">
+                  "{test.text}"
+                </p>
+                
+                <div className="flex items-center gap-4 mt-auto border-t border-gray-100 pt-6">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#113C2B] text-white flex items-center justify-center font-bold text-lg md:text-xl font-serif flex-shrink-0">
+                    {test.name.charAt(0)}
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-base md:text-lg font-bold text-[#113C2B] truncate">{test.name}</p>
+                    <p className="text-xs md:text-sm text-gray-500 truncate">{test.location}</p>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 

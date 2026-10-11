@@ -4,58 +4,40 @@ import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { ChevronRight, Leaf, ShieldCheck, CheckCircle2, Star, Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { useCachedApi } from '../hooks/useCachedApi';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const scrollRef = useRef(null);
-  const [product, setProduct] = useState(null);
-  const [category, setCategory] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('Ingredients');
   const [mainImg, setMainImg] = useState('');
+
+  const { data: allProducts, loading: prodLoading } = useCachedApi('gram_prod', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`, []);
+  const { data: catData, loading: catLoading } = useCachedApi('gram_cat', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`, []);
+
+  const product = (allProducts || []).find(p => p.id === parseInt(id));
+  const category = product ? (catData || []).find(c => c.id === product.category_id) : null;
+  const relatedProducts = product ? (allProducts || []).filter(p => p.category_id === product.category_id && p.id !== product.id && p.is_active).slice(0, 8) : [];
   
-  // Extra data for related products
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const loading = prodLoading || catLoading;
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    fetchProductDetails();
+    setQty(1);
+    setSelectedSizeIdx(0);
   }, [id]);
 
-  const fetchProductDetails = async () => {
-    setLoading(true);
-    try {
-      // Since there's no specific GET /products/:id in the public API, we'll fetch all and filter
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`);
-      const allProducts = res.data;
-      const current = allProducts.find(p => p.id === parseInt(id));
-      if (!current) {
-        setLoading(false);
-        return;
-      }
-      setProduct(current);
-      setMainImg(current.image_url);
-
-      const catRes = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`);
-      const cat = catRes.data.find(c => c.id === current.category_id);
-      setCategory(cat);
-
-      // Related products (same category)
-      const related = allProducts.filter(p => p.category_id === current.category_id && p.id !== current.id && p.is_active).slice(0, 8);
-      setRelatedProducts(related);
-      
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (product) {
+      setMainImg(product.image_url);
     }
-  };
+  }, [product, id]);
 
-  if (loading) {
+  if (loading && !product) {
     return (
       <div className="min-h-screen bg-[#FDF9F1] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#113C2B]/20 border-t-[#113C2B] rounded-full animate-spin" />
@@ -63,7 +45,7 @@ const ProductDetailsPage = () => {
     );
   }
 
-  if (!product) {
+  if (!product && !loading) {
     return (
       <div className="min-h-screen bg-[#FDF9F1] flex flex-col items-center justify-center">
         <h2 className="text-2xl font-serif text-[#113C2B] mb-4">Product not found</h2>

@@ -81,7 +81,7 @@ const CategoryPage = () => {
       const range = priceRanges.find(r => r.id === priceId);
       if (range) {
         result = result.filter(p => {
-          const parsedSizes = typeof p.variants === 'string' ? JSON.parse(p.variants) : (p.variants || []);
+          const parsedSizes = typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []);
           const price = parseFloat(parsedSizes[0]?.price || p.price || 0);
           return price >= range.min && price <= range.max;
         });
@@ -90,8 +90,8 @@ const CategoryPage = () => {
 
     // Sort
     result.sort((a, b) => {
-      const priceA = parseFloat((typeof a.variants === 'string' ? JSON.parse(a.variants) : (a.variants || []))[0]?.price || a.price || 0);
-      const priceB = parseFloat((typeof b.variants === 'string' ? JSON.parse(b.variants) : (b.variants || []))[0]?.price || b.price || 0);
+      const priceA = parseFloat((typeof a.sizes === 'string' ? JSON.parse(a.sizes) : (a.sizes || []))[0]?.price || a.price || 0);
+      const priceB = parseFloat((typeof b.sizes === 'string' ? JSON.parse(b.sizes) : (b.sizes || []))[0]?.price || b.price || 0);
       
       if (sort === 'price-asc') return priceA - priceB;
       if (sort === 'price-desc') return priceB - priceA;
@@ -189,21 +189,21 @@ const CategoryPage = () => {
 
           {/* Sidebar (Desktop & Mobile Overlay) */}
           <div className={`
-            fixed inset-0 z-50 lg:static lg:z-auto lg:block lg:w-1/4
-            ${isMobileFiltersOpen ? 'block' : 'hidden'}
+            fixed inset-0 z-[100] lg:static lg:z-auto lg:block lg:w-1/4
+            ${isMobileFiltersOpen ? 'flex items-center justify-center' : 'hidden'}
           `}>
             {/* Mobile Backdrop */}
             <div className="fixed inset-0 bg-black/50 lg:hidden" onClick={() => setIsMobileFiltersOpen(false)}></div>
             
             {/* Sidebar Content */}
-            <div className="fixed inset-y-0 right-0 w-[80%] max-w-sm bg-white lg:bg-transparent lg:static lg:w-full h-full lg:h-auto overflow-y-auto lg:overflow-visible p-6 lg:p-0 shadow-2xl lg:shadow-none transition-transform duration-300">
+            <div className="relative z-10 w-[90%] max-w-sm bg-white lg:bg-transparent lg:static lg:w-full max-h-[80vh] lg:max-h-none overflow-y-auto lg:overflow-visible p-6 lg:p-0 rounded-3xl lg:rounded-none shadow-2xl lg:shadow-none transition-all duration-300">
               
-              <div className="flex justify-between items-center lg:hidden mb-6">
-                <h2 className="text-xl font-bold font-serif text-[#113C2B]">Filters</h2>
-                <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 bg-gray-100 rounded-full"><X className="w-5 h-5" /></button>
+              <div className="flex justify-between items-center lg:hidden mb-4">
+                <h2 className="text-2xl font-bold font-serif text-[#113C2B]">Filters</h2>
+                <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:text-red-500"><X className="w-5 h-5" /></button>
               </div>
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#e8dfc8] sticky top-28">
+              <div className="bg-white lg:rounded-3xl lg:p-6 lg:shadow-sm lg:border lg:border-[#e8dfc8] lg:sticky lg:top-28">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg text-[#113C2B] font-serif flex items-center gap-2">
                     <Filter className="w-5 h-5 text-[#F8B319]" /> Filters
@@ -235,7 +235,7 @@ const CategoryPage = () => {
                   <h4 className="font-bold text-gray-900 mb-4 tracking-wide text-sm">Price</h4>
                   <div className="space-y-3">
                     {priceRanges.map(range => (
-                      <label key={range.id} className="flex items-center gap-3 cursor-pointer group">
+                      <label key={range.id} onClick={() => setSelectedPriceRange(range.id)} className="flex items-center gap-3 cursor-pointer group">
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors ${selectedPriceRange === range.id ? 'border-[#113C2B]' : 'border-gray-300 group-hover:border-[#113C2B]'}`}>
                           {selectedPriceRange === range.id && <div className="w-2.5 h-2.5 rounded-full bg-[#113C2B]"></div>}
                         </div>

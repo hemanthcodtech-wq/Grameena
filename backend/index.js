@@ -11,6 +11,7 @@ app.use(cors({
     'http://localhost:5173',
     'https://grameena-7ivj.vercel.app',
     'https://grameena.vercel.app',
+    'https://grameena-alpha.vercel.app'
   ],
   credentials: true,
 }));

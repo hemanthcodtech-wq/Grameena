@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { ShoppingBag, User, Search, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
@@ -39,13 +39,26 @@ const CustomerLayout = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex space-x-8 items-center font-semibold text-[#1A4B3A]">
-              <Link to="/" className="hover:text-orange-500 transition-colors text-orange-500">Home</Link>
-              <Link to="/products" className="hover:text-orange-500 transition-colors">Shop</Link>
-              <Link to="/category/pickles" className="hover:text-orange-500 transition-colors">Pickles</Link>
-              <Link to="/category/oils" className="hover:text-orange-500 transition-colors">Cold Press Oils</Link>
-              <Link to="/category/snacks" className="hover:text-orange-500 transition-colors">Snacks</Link>
-              <Link to="/about" className="hover:text-orange-500 transition-colors">About</Link>
-              <Link to="/contact" className="hover:text-orange-500 transition-colors">Contact</Link>
+              {[
+                { name: 'Home', path: '/' },
+                { name: 'Shop', path: '/products' },
+                { name: 'Pickles', path: '/category/pickles' },
+                { name: 'Cold Press Oils', path: '/category/oils' },
+                { name: 'Snacks', path: '/category/snacks' },
+                { name: 'About', path: '/about' },
+                { name: 'Contact', path: '/contact' }
+              ].map(link => (
+                <NavLink 
+                  key={link.name} 
+                  to={link.path} 
+                  className={({ isActive }) => 
+                    `transition-colors ${isActive ? 'text-orange-500' : 'hover:text-orange-500'}`
+                  }
+                  end={link.path === '/'}
+                >
+                  {link.name}
+                </NavLink>
+              ))}
             </nav>
 
             {/* Icons */}
