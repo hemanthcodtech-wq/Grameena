@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckSquare, Square, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckSquare, Square, AlertCircle, Loader2, KeyRound, CheckCircle2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import heroImg from '../assets/hero.jpg';
 import logo from '../assets/logo.png';
 
@@ -17,8 +18,27 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // OTP Login States
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpStep, setOtpStep] = useState('email'); // 'email' or 'verify'
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleGoogleCredentialResponse = async (response) => {
     if (!response || !response.credential) return;
@@ -56,7 +76,6 @@ const LoginPage = () => {
       if (!window.google?.accounts) return;
 
       try {
-        // Initialize ID token flow (One Tap & Sign In With Google button)
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleCredentialResponse,
@@ -80,7 +99,6 @@ const LoginPage = () => {
       }
 
       try {
-        // Initialize standard OAuth 2.0 Token Client (Popup flow that ALWAYS opens reliably on click)
         if (window.google.accounts.oauth2) {
           tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
@@ -139,7 +157,6 @@ const LoginPage = () => {
 
   const triggerGooglePrompt = () => {
     setError('');
-    // 1. If OAuth2 token client is initialized, request access token directly (opens the official Google Account Selector popup)
     if (window.google?.accounts?.oauth2) {
       try {
         const client = window.google.accounts.oauth2.initTokenClient({
@@ -182,7 +199,6 @@ const LoginPage = () => {
       }
     }
 
-    // 2. Fallback to Google ID prompt if oauth2 is unavailable
     if (window.google?.accounts?.id) {
       window.google.accounts.id.prompt();
     } else {
@@ -207,6 +223,82 @@ const LoginPage = () => {
       setError(err.response?.data?.error || 'Invalid credentials');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Open the OTP Modal
+  const handleOpenOtpModal = () => {
+    setOtpError('');
+    setOtpSuccessMessage('');
+    setOtpCode('');
+    // Prefill with existing email if user typed one
+    if (email && email.includes('@')) {
+      setOtpEmail(email);
+    }
+    setOtpStep('email');
+    setShowOtpModal(true);
+  };
+
+  // Step 1: Send OTP to Email
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!otpEmail || !otpEmail.trim()) {
+      setOtpError('Please enter your registered email address.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError('');
+    setOtpSuccessMessage('');
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/send-login-otp`,
+        { email: otpEmail.trim() }
+      );
+      setOtpSuccessMessage(res.data.message || `OTP sent to ${otpEmail}`);
+      setOtpStep('verify');
+      setResendCooldown(30);
+    } catch (err) {
+      if (err.response?.data?.notRegistered) {
+        setOtpError('No account found with this email. Please click "Sign Up" to register first.');
+      } else {
+        setOtpError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP and Login
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setOtpError('Please enter the full 6-digit code sent to your email.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError('');
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/verify-login-otp`,
+        { email: otpEmail.trim(), otp: otpCode.trim() }
+      );
+
+      login(res.data.user, res.data.token);
+      setShowOtpModal(false);
+
+      if (res.data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/account/dashboard');
+      }
+    } catch (err) {
+      setOtpError(err.response?.data?.error || 'Invalid or expired OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -250,7 +342,12 @@ const LoginPage = () => {
           <p className="text-gray-600 mb-8 text-sm">Login to continue your traditional food journey with us.</p>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-semibold rounded-xl flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
             
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -260,7 +357,7 @@ const LoginPage = () => {
                 type="email"
                 required
                 className="w-full pl-12 pr-4 py-3 bg-white border border-[#e8dfc8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#113C2B] focus:border-transparent transition-all text-sm"
-                placeholder="Email Address / Mobile Number"
+                placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -296,13 +393,13 @@ const LoginPage = () => {
                 {rememberMe ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
                 Remember me
               </button>
-              <a href="#" className="font-bold text-[#113C2B] hover:underline">Forgot Password?</a>
+              <Link to="/contact" className="font-bold text-[#113C2B] hover:underline">Need Help?</Link>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <>
@@ -311,7 +408,7 @@ const LoginPage = () => {
                 </>
               ) : (
                 <>
-                  Login <ArrowRight className="w-4 h-4 ml-2" />
+                  Login with Password <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </button>
@@ -342,8 +439,14 @@ const LoginPage = () => {
                 </>
               )}
             </button>
-            <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-[#113C2B] bg-white hover:bg-green-50 transition-colors shadow-sm">
-              <svg className="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+
+            {/* Continue with OTP Button */}
+            <button 
+              type="button"
+              onClick={handleOpenOtpModal}
+              className="w-full flex items-center justify-center py-3 px-4 border border-[#113C2B]/30 rounded-xl text-sm font-bold text-[#113C2B] bg-white hover:bg-[#113C2B]/5 transition-all shadow-sm active:scale-[0.99] cursor-pointer"
+            >
+              <KeyRound className="w-5 h-5 mr-3 text-[#113C2B]" />
               Continue with OTP
             </button>
           </div>
@@ -354,12 +457,167 @@ const LoginPage = () => {
              </div>
              <div>
                <p className="text-sm font-bold text-[#113C2B]">Fresh. Natural. Traditional.</p>
-               <p className="text-xs text-gray-600">Good food brings people together.</p>
+               <p className="text-xs text-gray-600">Passwordless access with email verification OTP.</p>
              </div>
           </div>
 
         </div>
       </div>
+
+      {/* OTP Login Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-[#eedfc0] text-center relative"
+            >
+              <button 
+                onClick={() => setShowOtpModal(false)}
+                className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-14 h-14 rounded-2xl bg-[#113C2B] text-[#F8B319] flex items-center justify-center mx-auto mb-4 shadow-md">
+                <KeyRound className="w-7 h-7" />
+              </div>
+
+              {otpStep === 'email' ? (
+                /* STEP 1: Enter Email */
+                <>
+                  <h3 className="font-serif font-bold text-2xl text-[#113C2B]">Login with OTP</h3>
+                  <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+                    Enter your registered email address. We'll send you a 6-digit verification code to sign in instantly.
+                  </p>
+
+                  {otpError && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-xl text-left">
+                      {otpError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendOtp} className="mt-6 space-y-4">
+                    <div className="relative text-left">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                        Your Registered Email
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="email"
+                          required
+                          autoFocus
+                          value={otpEmail}
+                          onChange={(e) => setOtpEmail(e.target.value)}
+                          placeholder="name@example.com"
+                          className="w-full pl-10 pr-4 py-3 bg-[#FDF9F1] border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#113C2B] text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading}
+                      className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      {otpLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2 text-[#F8B319]" />
+                          Sending Code...
+                        </>
+                      ) : (
+                        <>
+                          Send Verification Code <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                /* STEP 2: Enter 6-digit OTP */
+                <>
+                  <h3 className="font-serif font-bold text-2xl text-[#113C2B]">Enter Verification Code</h3>
+                  <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+                    We've sent a 6-digit verification code to:
+                    <br />
+                    <span className="font-bold text-[#113C2B] text-sm">{otpEmail}</span>
+                  </p>
+
+                  {otpSuccessMessage && (
+                    <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>{otpSuccessMessage}</span>
+                    </div>
+                  )}
+
+                  {otpError && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-xl text-left">
+                      {otpError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleVerifyOtp} className="mt-6 space-y-4">
+                    <div>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        autoFocus
+                        placeholder="• • • • • •"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        className="w-full text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 bg-[#FDF9F1] border-2 border-[#113C2B]/30 rounded-2xl focus:outline-none focus:border-[#113C2B] text-[#113C2B] font-bold"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading || otpCode.length !== 6}
+                      className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      {otpLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2 text-[#F8B319]" />
+                          Verifying Code...
+                        </>
+                      ) : (
+                        'Verify & Enter Account'
+                      )}
+                    </button>
+
+                    <div className="pt-2 flex items-center justify-between text-xs text-gray-500">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpStep('email');
+                          setOtpError('');
+                          setOtpCode('');
+                        }}
+                        className="text-[#113C2B] font-bold hover:underline cursor-pointer"
+                      >
+                        Change Email
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={resendCooldown > 0 || otpLoading}
+                        onClick={handleSendOtp}
+                        className="text-[#113C2B] font-bold hover:underline disabled:opacity-50 cursor-pointer"
+                      >
+                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

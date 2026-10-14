@@ -81,6 +81,88 @@ router.post('/resend-otp', async (req, res) => {
   }
 });
 
+// POST /api/auth/send-login-otp
+router.post('/send-login-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email address is required' });
+  const cleanEmail = email.toLowerCase().trim();
+
+  try {
+    const userRes = await pool.query('SELECT id, name, is_blocked FROM users WHERE LOWER(email)=$1', [cleanEmail]);
+    if (!userRes.rows.length) {
+      return res.status(404).json({ 
+        error: 'No account found with this email. Please sign up first.',
+        notRegistered: true 
+      });
+    }
+
+    const user = userRes.rows[0];
+    if (user.is_blocked) {
+      return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await pool.query("DELETE FROM otps WHERE LOWER(email)=$1 AND type='email'", [cleanEmail]);
+    await pool.query("INSERT INTO otps (email, otp, expires_at, type) VALUES ($1, $2, $3, 'email')", [cleanEmail, otp, expiresAt]);
+    
+    await sendOTPEmail(cleanEmail, otp, user.name);
+    res.json({ success: true, message: 'OTP sent to ' + cleanEmail });
+  } catch (err) {
+    console.error('Send login OTP error:', err);
+    res.status(500).json({ error: 'Failed to send OTP. Please check your email and try again.' });
+  }
+});
+
+// POST /api/auth/verify-login-otp
+router.post('/verify-login-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
+  const cleanEmail = email.toLowerCase().trim();
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM otps WHERE LOWER(email)=$1 AND otp=$2 AND type='email' AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
+      [cleanEmail, otp.trim()]
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({ error: 'Invalid or expired OTP. Please request a new code.' });
+    }
+
+    const userRes = await pool.query('SELECT * FROM users WHERE LOWER(email)=$1', [cleanEmail]);
+    if (!userRes.rows.length) {
+      return res.status(404).json({ error: 'Account not found. Please sign up first.' });
+    }
+
+    const user = userRes.rows[0];
+    if (user.is_blocked) {
+      return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
+    }
+
+    // Verify user and clean up used OTP
+    await pool.query("UPDATE users SET is_verified=TRUE, email_verified=TRUE WHERE id=$1", [user.id]);
+    await pool.query("DELETE FROM otps WHERE LOWER(email)=$1", [cleanEmail]);
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || null,
+        avatar_url: user.avatar_url,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Verify login OTP error:', err);
+    res.status(500).json({ error: 'Failed to verify OTP. Server error.' });
+  }
+});
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
