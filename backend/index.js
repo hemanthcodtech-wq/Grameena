@@ -57,10 +57,21 @@ app.get('/api/public/banners', async (req, res) => {
 app.get('/api/public/settings', async (req, res) => {
   try {
     const result = await pool.query("SELECT value FROM settings WHERE key='site_settings'");
-    if (result.rows.length > 0) {
+    if (result.rows.length > 0 && result.rows[0].value) {
       res.json(result.rows[0].value);
     } else {
-      res.json({});
+      res.json({
+        siteName: 'Grameena Bharatham',
+        tagline: 'The Taste of Rural Andhra',
+        email: 'sudhakar.moparru@gmail.com',
+        phone: '+91 81436 80630',
+        address: 'JKC Road, Guntur, Andhra Pradesh - 520006',
+        facebook: '',
+        instagram: 'https://www.instagram.com/grameenabharatham',
+        whatsapp: 'https://wa.me/+918143680630',
+        youtube: '',
+        twitter: ''
+      });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });

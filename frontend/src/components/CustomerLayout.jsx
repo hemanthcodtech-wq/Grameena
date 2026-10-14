@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ShoppingBag, 
   User, 
@@ -12,7 +12,12 @@ import {
   Tag, 
   MapPin, 
   LogOut, 
-  ShieldCheck 
+  ShieldCheck,
+  Home,
+  Store,
+  Sparkles,
+  PhoneCall,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
@@ -26,10 +31,29 @@ const CustomerLayout = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { totalItems } = useCart();
   const { totalWishlistItems, toastMessage } = useWishlist();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -275,145 +299,184 @@ const CustomerLayout = () => {
           </div>
         </div>
 
-        {/* Mobile Menu - Full Screen Overlay */}
+        {/* Mobile Menu - Modern Slide-Over Drawer with Safe Viewport Scrolling */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div 
-              initial={{ opacity: 0, y: '-100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '-100%', transition: { delay: 0.2, duration: 0.4 } }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-0 z-[100] bg-[#113C2B] flex flex-col"
-            >
-              {/* Header inside Menu */}
-              <div className="flex justify-between items-center p-6 border-b border-white/10">
-                <img src={logo} alt="Grameena Bharatham" className="h-20 md:h-24 w-auto object-contain bg-white/10 p-2 rounded-xl backdrop-blur-md" />
-                <button 
-                  onClick={() => setIsMenuOpen(false)} 
-                  className="w-12 h-12 bg-white/10 hover:bg-[#F8B319] text-white hover:text-[#113C2B] rounded-full flex items-center justify-center transition-all duration-300"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+            <div className="fixed inset-0 z-[100] flex">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={() => setIsMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              />
 
-              {/* Menu Links */}
-              <div className="flex-1 flex flex-col justify-center px-8 py-8 space-y-6 overflow-y-auto">
-                {[
-                  { name: 'Home', path: '/' },
-                  { name: 'Shop All', path: '/products' },
-                  { name: '🔥 Special Offers', path: '/offers' },
-                  { name: 'Wishlist', path: '/wishlist', badge: totalWishlistItems },
-                  { name: 'Pickles', path: '/category/pickles' },
-                  { name: 'Cold Press Oils', path: '/category/oils' },
-                  { name: 'Snacks', path: '/category/snacks' },
-                  { name: 'Our Story', path: '/about' },
-                  { name: 'Contact Us', path: '/contact' },
-                ].map((item, i) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ delay: 0.1 + (i * 0.05), duration: 0.4 }}
-                  >
-                    <Link 
-                      to={item.path} 
-                      onClick={() => setIsMenuOpen(false)} 
-                      className="text-2xl md:text-4xl font-serif font-bold text-[#FDF9F1] hover:text-[#F8B319] transition-colors flex items-center justify-between group"
-                    >
-                      <span>{item.name}</span>
-                      {item.badge > 0 && (
-                        <span className="text-sm font-sans bg-[#F8B319] text-[#113C2B] font-extrabold px-3 py-1 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  </motion.div>
-                ))}
-
-                {/* Account Section in Mobile Menu */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
-                  <p className="text-[#F8B319] text-xs font-bold uppercase tracking-wider">Customer Account</p>
-                  {isAuthenticated ? (
-                    <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-white">
-                      <Link
-                        to="/account/dashboard"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="/account/orders"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        My Orders
-                      </Link>
-                      <Link
-                        to="/account/coupons"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        Coupons
-                      </Link>
-                      <Link
-                        to="/account/addresses"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        Addresses
-                      </Link>
-                      <Link
-                        to="/account/profile"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        Profile
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className="p-2.5 rounded-xl bg-red-500/20 text-red-300 hover:bg-red-500/30 text-left transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-3">
-                      <Link
-                        to="/login"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex-1 text-center py-2.5 bg-[#F8B319] text-[#113C2B] font-bold rounded-xl text-sm"
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        to="/signup"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex-1 text-center py-2.5 bg-white/10 text-white font-bold rounded-xl text-sm border border-white/20"
-                      >
-                        Sign Up
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Footer inside Menu */}
+              {/* Drawer Content */}
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="p-8 border-t border-white/10 bg-black/20"
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="relative w-full max-w-sm sm:max-w-md bg-[#113C2B] text-white flex flex-col h-[100dvh] max-h-[100dvh] shadow-2xl z-10"
               >
-                <p className="text-[#F8B319] text-sm font-bold tracking-widest uppercase mb-2">Need Help?</p>
-                <p className="text-white text-lg">+91 81436 80630</p>
-                <p className="text-white/60 text-sm mt-1">sudhakar.moparru@gmail.com</p>
+                {/* Header inside Menu (sticky at top so it never scrolls away or hides content) */}
+                <div className="flex-shrink-0 flex justify-between items-center px-5 py-4 border-b border-white/10 bg-[#0d2f22]">
+                  <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
+                    <img 
+                      src={logo} 
+                      alt="Grameena Bharatham" 
+                      className="h-10 sm:h-12 w-auto object-contain bg-white/10 p-1.5 rounded-xl backdrop-blur-md" 
+                    />
+                  </Link>
+                  <button 
+                    onClick={() => setIsMenuOpen(false)} 
+                    aria-label="Close Menu"
+                    className="w-10 h-10 bg-white/10 hover:bg-[#F8B319] text-white hover:text-[#113C2B] rounded-full flex items-center justify-center transition-all duration-300"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Menu Scrollable Body - flex-1 with overflow-y-auto ensures Home is always at top and visible */}
+                <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 overscroll-contain">
+                  {/* Primary Navigation Links */}
+                  <div className="space-y-1.5">
+                    {[
+                      { name: 'Home', path: '/', icon: Home },
+                      { name: 'Shop All Products', path: '/products', icon: Store },
+                      { name: 'Special Offers', path: '/offers', isSpecial: true, icon: Sparkles },
+                      { name: 'My Wishlist', path: '/wishlist', badge: totalWishlistItems, icon: Heart },
+                      { name: 'Pickles', path: '/category/pickles', icon: Tag },
+                      { name: 'Cold Press Oils', path: '/category/oils', icon: Tag },
+                      { name: 'Snacks', path: '/category/snacks', icon: Tag },
+                      { name: 'Our Story', path: '/about', icon: BookOpen },
+                      { name: 'Contact Us', path: '/contact', icon: PhoneCall },
+                    ].map((item, i) => {
+                      const IconComp = item.icon;
+                      const isCurrentActive = location.pathname === item.path;
+
+                      return (
+                        <Link 
+                          key={item.name}
+                          to={item.path} 
+                          onClick={() => setIsMenuOpen(false)} 
+                          className={`flex items-center justify-between px-3.5 py-3 rounded-xl transition-all font-serif ${
+                            isCurrentActive 
+                              ? 'bg-[#F8B319] text-[#113C2B] font-bold shadow-md' 
+                              : item.isSpecial
+                              ? 'bg-[#F8B319]/15 text-[#F8B319] hover:bg-[#F8B319]/25 font-bold border border-[#F8B319]/30'
+                              : 'text-gray-100 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <IconComp className={`w-5 h-5 ${isCurrentActive ? 'text-[#113C2B]' : item.isSpecial ? 'text-[#F8B319]' : 'text-gray-300'}`} />
+                            <span className="text-base sm:text-lg tracking-wide">{item.name}</span>
+                          </div>
+                          {item.isSpecial ? (
+                            <span className="text-[10px] bg-red-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                              OFFERS
+                            </span>
+                          ) : item.badge > 0 ? (
+                            <span className="text-xs bg-[#F8B319] text-[#113C2B] font-black px-2.5 py-0.5 rounded-full">
+                              {item.badge}
+                            </span>
+                          ) : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Account Section in Mobile Menu */}
+                  <div className="pt-4 border-t border-white/10 space-y-3">
+                    <p className="text-[#F8B319] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" /> Customer Account
+                    </p>
+                    {isAuthenticated ? (
+                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-white">
+                        <Link
+                          to="/account/dashboard"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Dashboard</span>
+                        </Link>
+                        <Link
+                          to="/account/orders"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5 text-orange-400" />
+                          <span>My Orders</span>
+                        </Link>
+                        <Link
+                          to="/account/coupons"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <Tag className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Coupons</span>
+                        </Link>
+                        <Link
+                          to="/account/addresses"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Addresses</span>
+                        </Link>
+                        <Link
+                          to="/account/profile"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <User className="w-3.5 h-3.5 text-blue-300" />
+                          <span>Profile</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            handleLogout();
+                          }}
+                          className="p-2.5 rounded-xl bg-red-500/20 text-red-300 hover:bg-red-500/30 text-left transition-colors flex items-center gap-1.5"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Link
+                          to="/login"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex-1 text-center py-2.5 bg-[#F8B319] text-[#113C2B] font-bold rounded-xl text-xs hover:bg-[#e09c13] transition-colors"
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          to="/signup"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex-1 text-center py-2.5 bg-white/10 text-white font-bold rounded-xl text-xs border border-white/20 hover:bg-white/20 transition-colors"
+                        >
+                          Sign Up
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer inside Menu (compact & anchored at bottom) */}
+                <div className="flex-shrink-0 px-5 py-4 border-t border-white/10 bg-[#0d2f22]/90 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="text-[#F8B319] font-bold tracking-wider uppercase text-[10px]">Customer Support</p>
+                    <a href="tel:+918143680630" className="text-white font-semibold hover:underline">+91 81436 80630</a>
+                  </div>
+                  <span className="text-[10px] text-white/50">Grameena Bharatham</span>
+                </div>
               </motion.div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </header>

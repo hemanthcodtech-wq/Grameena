@@ -1,6 +1,7 @@
 import { Phone, Mail, MapPin, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 // Animation Components
 const FadeInUp = ({ children, delay = 0, className = "" }) => (
@@ -53,6 +54,35 @@ const StaggerItem = ({ children, className = "", style = {} }) => (
 
 const ContactPage = () => {
   const [openFaq, setOpenFaq] = useState(null);
+  const [settings, setSettings] = useState({
+    siteName: 'Grameena Bharatham',
+    tagline: 'The Taste of Rural Andhra',
+    email: 'sudhakar.moparru@gmail.com',
+    phone: '+91 81436 80630',
+    address: 'JKC Road, Guntur, Andhra Pradesh - 520006',
+    facebook: '#',
+    instagram: 'https://www.instagram.com/grameenabharatham',
+    whatsapp: 'https://wa.me/+918143680630',
+    youtube: '',
+    twitter: ''
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const res = await axios.get(`${apiUrl}/api/public/settings`);
+        if (res.data && Object.keys(res.data).length > 0) {
+          setSettings(prev => ({
+            ...prev,
+            ...res.data
+          }));
+        }
+      } catch (err) {}
+    };
+    fetchSettings();
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -88,10 +118,17 @@ const ContactPage = () => {
 
     const message = `Hello Grameena Bharatham!\n\nI have a new enquiry.\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email || 'N/A'}\n*Service Category:* ${service || 'Not specified'}\n*Topic:* ${topic || 'Not specified'}\n*Requirements:* ${requirements}`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/918143680630?text=${encodedMessage}`;
+    const targetWaNumber = (settings.phone || '918143680630').replace(/[^0-9]/g, '');
+    const whatsappUrl = `https://wa.me/${targetWaNumber}?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
   };
+
+  const whatsappHref = settings.whatsapp 
+    ? (settings.whatsapp.startsWith('http') || settings.whatsapp.startsWith('https://wa.me') 
+        ? settings.whatsapp 
+        : `https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`)
+    : 'https://wa.me/+918143680630';
 
   const faqs = [
     {
@@ -144,7 +181,9 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#113C2B] text-lg mb-1">Phone Numbers</h3>
-                  <p className="text-gray-600 font-medium">+91 81436 80630</p>
+                  <a href={`tel:${settings.phone || '+918143680630'}`} className="text-gray-600 font-medium hover:text-[#F8B319] transition-colors">
+                    {settings.phone || '+91 81436 80630'}
+                  </a>
                 </div>
               </StaggerItem>
 
@@ -154,8 +193,8 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#113C2B] text-lg mb-1">Email Address</h3>
-                  <a href="mailto:sudhakar.moparru@gmail.com" className="text-gray-600 font-medium hover:text-[#F8B319] transition-colors">
-                    sudhakar.moparru@gmail.com
+                  <a href={`mailto:${settings.email || 'sudhakar.moparru@gmail.com'}`} className="text-gray-600 font-medium hover:text-[#F8B319] transition-colors break-all">
+                    {settings.email || 'sudhakar.moparru@gmail.com'}
                   </a>
                 </div>
               </StaggerItem>
@@ -167,8 +206,75 @@ const ContactPage = () => {
                 <div>
                   <h3 className="font-bold text-[#113C2B] text-lg mb-1">Location</h3>
                   <p className="text-gray-600 font-medium leading-relaxed">
-                    JKC Road, Guntur,<br/>Andhra Pradesh - 520006
+                    {settings.address || 'JKC Road, Guntur, Andhra Pradesh - 520006'}
                   </p>
+                </div>
+              </StaggerItem>
+
+              {/* Social Media Links */}
+              <StaggerItem className="pt-2 border-t border-gray-200">
+                <h4 className="text-sm font-bold text-[#113C2B] mb-3">Connect With Us</h4>
+                <div className="flex gap-3 flex-wrap">
+                  {settings.facebook && settings.facebook !== '#' && (
+                    <a 
+                      href={settings.facebook} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title="Facebook"
+                      aria-label="Facebook"
+                      className="w-11 h-11 rounded-full bg-[#113C2B] text-[#F8B319] hover:bg-[#F8B319] hover:text-[#113C2B] flex items-center justify-center transition-all duration-300 shadow-md"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                    </a>
+                  )}
+                  {settings.instagram && (
+                    <a 
+                      href={settings.instagram} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title="Instagram"
+                      aria-label="Instagram"
+                      className="w-11 h-11 rounded-full bg-[#113C2B] text-[#F8B319] hover:bg-[#F8B319] hover:text-[#113C2B] flex items-center justify-center transition-all duration-300 shadow-md"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    </a>
+                  )}
+                  {settings.whatsapp && (
+                    <a 
+                      href={whatsappHref} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title="WhatsApp"
+                      aria-label="WhatsApp"
+                      className="w-11 h-11 rounded-full bg-[#113C2B] text-[#F8B319] hover:bg-[#F8B319] hover:text-[#113C2B] flex items-center justify-center transition-all duration-300 shadow-md"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </a>
+                  )}
+                  {settings.youtube && (
+                    <a 
+                      href={settings.youtube} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title="YouTube"
+                      aria-label="YouTube"
+                      className="w-11 h-11 rounded-full bg-[#113C2B] text-[#F8B319] hover:bg-[#F8B319] hover:text-[#113C2B] flex items-center justify-center transition-all duration-300 shadow-md"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                    </a>
+                  )}
+                  {settings.twitter && (
+                    <a 
+                      href={settings.twitter} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title="Twitter / X"
+                      aria-label="Twitter / X"
+                      className="w-11 h-11 rounded-full bg-[#113C2B] text-[#F8B319] hover:bg-[#F8B319] hover:text-[#113C2B] flex items-center justify-center transition-all duration-300 shadow-md"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+                    </a>
+                  )}
                 </div>
               </StaggerItem>
             </StaggerContainer>

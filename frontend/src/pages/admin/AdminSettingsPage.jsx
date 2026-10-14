@@ -20,6 +20,8 @@ const AdminSettingsPage = () => {
     facebook: '#',
     instagram: 'https://www.instagram.com/grameenabharatham',
     whatsapp: 'https://wa.me/+918143680630',
+    youtube: '',
+    twitter: '',
     scrollerMessages: [
       '✨ 100% Homemade & Authentic Andhra Pickles & Snacks',
       '🚚 Free Shipping on Orders above ₹999',
@@ -106,7 +108,7 @@ const AdminSettingsPage = () => {
       await axios.put(`${API}/admin/settings`, settings, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Store settings & customer scroller saved successfully!');
+      alert('Store settings, social links & scrollers saved successfully!');
     } catch (err) {
       console.error(err);
       alert('Failed to save settings');
@@ -124,26 +126,28 @@ const AdminSettingsPage = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-[#113C2B]">Store & Scroller Settings</h1>
-        <p className="text-gray-500 text-sm mt-1">Customize website details, top announcement ticker, and customer reviews scroller</p>
+    <div className="p-3 sm:p-6 max-w-5xl w-full">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#113C2B]">Store & Scroller Settings</h1>
+        <p className="text-gray-500 text-xs sm:text-sm mt-1">
+          Customize website details, announcement ticker, social media links, and customer reviews scroller
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         
         {/* Customer Announcement Marquee Scroller Customizer */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#e8dfc8]">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-[#e8dfc8]">
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e8dfc8]">
-            <Megaphone className="text-[#113C2B]" size={24} />
+            <Megaphone className="text-[#113C2B] shrink-0" size={22} />
             <div>
-              <h2 className="text-lg font-bold text-[#113C2B]">Top Announcement Bar Scroller</h2>
-              <p className="text-xs text-gray-500">Live scrolling marquee messages visible at the very top of all customer pages</p>
+              <h2 className="text-base sm:text-lg font-bold text-[#113C2B]">Top Announcement Bar Scroller</h2>
+              <p className="text-[11px] sm:text-xs text-gray-500">Live scrolling marquee messages visible at the very top of all customer pages</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input 
                 type="text" 
                 value={newScrollerMsg}
@@ -155,12 +159,12 @@ const AdminSettingsPage = () => {
                   }
                 }}
                 placeholder="e.g. 🚚 Free shipping across Andhra on orders above ₹999!"
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-sm"
+                className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm shadow-xs"
               />
               <button 
                 type="button" 
                 onClick={handleAddScrollerMessage}
-                className="px-4 py-2.5 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2.5 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shrink-0"
               >
                 <Plus size={16} /> Add Message
               </button>
@@ -175,16 +179,16 @@ const AdminSettingsPage = () => {
               ) : (
                 settings.scrollerMessages.map((msg, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-[#FAF7F0] border border-[#e8dfc8] rounded-xl">
-                    <span className="text-xs sm:text-sm text-[#113C2B] font-medium flex items-center gap-2">
+                    <span className="text-xs sm:text-sm text-[#113C2B] font-medium flex items-center gap-2 pr-2">
                       <span className="w-5 h-5 rounded-full bg-[#113C2B] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
-                      {msg}
+                      <span className="break-words">{msg}</span>
                     </span>
                     <button 
                       type="button" 
                       onClick={() => handleRemoveScrollerMessage(idx)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2"
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2 shrink-0"
                       title="Remove message"
                     >
                       <Trash2 size={16} />
@@ -197,12 +201,12 @@ const AdminSettingsPage = () => {
         </div>
 
         {/* Customer Testimonials Scroller Customizer */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#e8dfc8]">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-[#e8dfc8]">
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e8dfc8]">
-            <MessageSquare className="text-[#113C2B]" size={24} />
+            <MessageSquare className="text-[#113C2B] shrink-0" size={22} />
             <div>
-              <h2 className="text-lg font-bold text-[#113C2B]">Customer Reviews Scroller (What Our Family Says)</h2>
-              <p className="text-xs text-gray-500">Live testimonials scroller displayed near the bottom of the home page</p>
+              <h2 className="text-base sm:text-lg font-bold text-[#113C2B]">Customer Reviews Scroller (What Our Family Says)</h2>
+              <p className="text-[11px] sm:text-xs text-gray-500">Live testimonials scroller displayed near the bottom of the home page</p>
             </div>
           </div>
 
@@ -243,7 +247,7 @@ const AdminSettingsPage = () => {
             <button 
               type="button" 
               onClick={handleAddTestimonial}
-              className="px-4 py-2 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
+              className="px-4 py-2 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto"
             >
               <Plus size={14} /> Add Review Card
             </button>
@@ -261,7 +265,7 @@ const AdminSettingsPage = () => {
                     <button 
                       type="button" 
                       onClick={() => handleRemoveTestimonial(idx)}
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-gray-400 hover:text-red-500 p-1"
                       title="Remove"
                     >
                       <Trash2 size={14} />
@@ -274,46 +278,46 @@ const AdminSettingsPage = () => {
         </div>
 
         {/* General Settings */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            <Store className="text-[#113C2B]" size={24} />
-            <h2 className="text-lg font-bold text-gray-800">General Information</h2>
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-100">
+            <Store className="text-[#113C2B] shrink-0" size={22} />
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">General Information</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Site Name</label>
               <input 
                 type="text" 
                 name="siteName"
                 value={settings.siteName || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tagline</label>
               <input 
                 type="text" 
                 name="tagline"
                 value={settings.tagline || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
           </div>
         </div>
 
         {/* Contact Information */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            <MapPin className="text-[#113C2B]" size={24} />
-            <h2 className="text-lg font-bold text-gray-800">Contact Details</h2>
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-100">
+            <MapPin className="text-[#113C2B] shrink-0" size={22} />
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">Contact Details</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                 <Mail size={16} className="text-gray-400"/> Support Email
               </label>
               <input 
@@ -321,11 +325,11 @@ const AdminSettingsPage = () => {
                 name="email"
                 value={settings.email || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                 <Phone size={16} className="text-gray-400"/> Primary Phone Number
               </label>
               <input 
@@ -333,11 +337,11 @@ const AdminSettingsPage = () => {
                 name="phone"
                 value={settings.phone || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                 <MapPin size={16} className="text-gray-400"/> Store Address
               </label>
               <textarea 
@@ -345,48 +349,76 @@ const AdminSettingsPage = () => {
                 value={settings.address || ''}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none resize-none" 
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm resize-none" 
               ></textarea>
             </div>
           </div>
         </div>
 
         {/* Social Links */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            <Globe className="text-[#113C2B]" size={24} />
-            <h2 className="text-lg font-bold text-gray-800">Social Media Links</h2>
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-100">
+            <Globe className="text-[#113C2B] shrink-0" size={22} />
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Social Media & Messaging Links</h2>
+              <p className="text-[11px] sm:text-xs text-gray-500">Links saved here are automatically synced and displayed across Footer, Contact Page, and Support</p>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
               <input 
                 type="text" 
                 name="instagram"
                 value={settings.instagram || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                placeholder="https://www.instagram.com/yourpage"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp URL</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">WhatsApp URL / Number</label>
               <input 
                 type="text" 
                 name="whatsapp"
                 value={settings.whatsapp || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                placeholder="https://wa.me/+918143680630 or phone number"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Facebook URL</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Facebook URL</label>
               <input 
                 type="text" 
                 name="facebook"
                 value={settings.facebook || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none" 
+                placeholder="https://www.facebook.com/yourpage"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">YouTube Channel URL</label>
+              <input 
+                type="text" 
+                name="youtube"
+                value={settings.youtube || ''}
+                onChange={handleChange}
+                placeholder="https://www.youtube.com/@yourchannel"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Twitter / X URL</label>
+              <input 
+                type="text" 
+                name="twitter"
+                value={settings.twitter || ''}
+                onChange={handleChange}
+                placeholder="https://twitter.com/yourhandle"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#113C2B] focus:border-[#113C2B] outline-none text-xs sm:text-sm" 
               />
             </div>
           </div>
@@ -396,7 +428,7 @@ const AdminSettingsPage = () => {
           <button 
             type="submit"
             disabled={isSaving}
-            className="bg-[#113C2B] hover:bg-[#F8B319] text-white hover:text-[#113C2B] px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all transform hover:-translate-y-1 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full sm:w-auto bg-[#113C2B] hover:bg-[#F8B319] text-white hover:text-[#113C2B] px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isSaving ? (
               <>
