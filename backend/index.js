@@ -54,6 +54,19 @@ app.get('/api/public/banners', async (req, res) => {
   }
 });
 
+app.get('/api/public/settings', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT value FROM settings WHERE key='site_settings'");
+    if (result.rows.length > 0) {
+      res.json(result.rows[0].value);
+    } else {
+      res.json({});
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Grameena Backend is running!');
 });

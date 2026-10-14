@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckSquare, Square } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckSquare, Square, AlertCircle, Loader2 } from 'lucide-react';
 import heroImg from '../assets/hero.jpg';
 import logo from '../assets/logo.png';
+
+import { useAuth } from '../context/AuthContext';
+
+const GOOGLE_CLIENT_ID = '385501792305-vkk6934iddufuu3c55klcp54jqs24mt9.apps.googleusercontent.com';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -11,22 +15,198 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response || !response.credential) return;
+    setError('');
+    setGoogleLoading(true);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/google`,
+        { credential: response.credential, mode: 'login' }
+      );
+
+      login(res.data.user, res.data.token);
+      if (res.data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/account/dashboard');
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+      if (err.response?.data?.notRegistered) {
+        setError('No account found with this Google email. Please click "Sign Up" to create an account.');
+      } else {
+        setError(err.response?.data?.error || 'Google login failed. Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let tokenClient = null;
+
+    const setupGoogle = () => {
+      if (!window.google?.accounts) return;
+
+      try {
+        // Initialize ID token flow (One Tap & Sign In With Google button)
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+        });
+
+        const btnContainer = document.getElementById('google-login-btn-container');
+        if (btnContainer) {
+          btnContainer.innerHTML = '';
+          window.google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: '100%',
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left'
+          });
+        }
+      } catch (err) {
+        console.warn('Google id initialize error:', err);
+      }
+
+      try {
+        // Initialize standard OAuth 2.0 Token Client (Popup flow that ALWAYS opens reliably on click)
+        if (window.google.accounts.oauth2) {
+          tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'email profile openid',
+            callback: async (tokenResponse) => {
+              if (tokenResponse.error) {
+                console.error('Google token error:', tokenResponse);
+                setError('Google sign-in was cancelled or failed.');
+                return;
+              }
+              if (tokenResponse.access_token) {
+                setGoogleLoading(true);
+                setError('');
+                try {
+                  const res = await axios.post(
+                    `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/google`,
+                    { credential: tokenResponse.access_token, mode: 'login' }
+                  );
+                  login(res.data.user, res.data.token);
+                  if (res.data.user.role === 'admin') {
+                    navigate('/admin');
+                  } else {
+                    navigate('/account/dashboard');
+                  }
+                } catch (err) {
+                  console.error('Backend Google auth error:', err);
+                  if (err.response?.data?.notRegistered) {
+                    setError('No account found with this Google email. Please click "Sign Up" to create an account.');
+                  } else {
+                    setError(err.response?.data?.error || 'Google login failed. Please try again.');
+                  }
+                } finally {
+                  setGoogleLoading(false);
+                }
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Google oauth2 initTokenClient error:', err);
+      }
+    };
+
+    if (window.google?.accounts) {
+      setupGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts) {
+          setupGoogle();
+          clearInterval(interval);
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  const triggerGooglePrompt = () => {
+    setError('');
+    // 1. If OAuth2 token client is initialized, request access token directly (opens the official Google Account Selector popup)
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              console.error('Google token error:', tokenResponse);
+              return;
+            }
+            if (tokenResponse.access_token) {
+              setGoogleLoading(true);
+              try {
+                const res = await axios.post(
+                  `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/google`,
+                  { credential: tokenResponse.access_token, mode: 'login' }
+                );
+                login(res.data.user, res.data.token);
+                if (res.data.user.role === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/account/dashboard');
+                }
+              } catch (err) {
+                if (err.response?.data?.notRegistered) {
+                  setError('No account found with this Google email. Please click "Sign Up" to create an account.');
+                } else {
+                  setError(err.response?.data?.error || 'Google login failed.');
+                }
+              } finally {
+                setGoogleLoading(false);
+              }
+            }
+          }
+        });
+        client.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (err) {
+        console.warn('requestAccessToken failed:', err);
+      }
+    }
+
+    // 2. Fallback to Google ID prompt if oauth2 is unavailable
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
+    } else {
+      setError('Google Sign-In is initializing. Please wait a moment and click again.');
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/login`, { email, password });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+      login(res.data.user, res.data.token);
       
       if (res.data.user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate('/account/dashboard');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,9 +301,19 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-colors shadow-md"
+              disabled={loading}
+              className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-[#113C2B] hover:bg-[#1A4B3A] transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Login <ArrowRight className="w-4 h-4 ml-2" />
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  Login <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
             </button>
           </form>
 
@@ -134,9 +324,23 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-3" />
-              Continue with Google
+            <button 
+              type="button"
+              onClick={triggerGooglePrompt}
+              disabled={googleLoading}
+              className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 active:scale-[0.99] cursor-pointer"
+            >
+              {googleLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-3 text-[#113C2B]" />
+                  Checking Google account...
+                </>
+              ) : (
+                <>
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-3" />
+                  Continue with Google
+                </>
+              )}
             </button>
             <button className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-[#113C2B] bg-white hover:bg-green-50 transition-colors shadow-sm">
               <svg className="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>

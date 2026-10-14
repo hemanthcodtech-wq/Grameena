@@ -18,15 +18,42 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product, quantity = 1, size = null) => {
     setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id && item.size === size);
+      const selectedSize = size || product.size || product.weight || 'Standard';
+      const existing = prev.find(item => item.id === product.id && (item.size === selectedSize || item.weight === selectedSize));
       if (existing) {
         return prev.map(item => 
-          item.id === product.id && item.size === size 
+          item.id === product.id && (item.size === selectedSize || item.weight === selectedSize)
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prev, { ...product, quantity, size }];
+      return [...prev, { ...product, quantity, size: selectedSize, weight: selectedSize, price: parseFloat(product.price) || 0 }];
+    });
+  };
+
+  const addMultipleToCart = (productsList) => {
+    if (!Array.isArray(productsList) || productsList.length === 0) return;
+    setCartItems(prev => {
+      let updated = [...prev];
+      productsList.forEach(({ product, quantity = 1, size = null }) => {
+        const selectedSize = size || product.size || product.weight || 'Standard';
+        const existingIdx = updated.findIndex(item => item.id === product.id && (item.size === selectedSize || item.weight === selectedSize));
+        if (existingIdx > -1) {
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            quantity: updated[existingIdx].quantity + quantity
+          };
+        } else {
+          updated.push({
+            ...product,
+            quantity,
+            size: selectedSize,
+            weight: selectedSize,
+            price: parseFloat(product.price) || 0
+          });
+        }
+      });
+      return updated;
     });
   };
 
@@ -55,6 +82,7 @@ export const CartProvider = ({ children }) => {
     <CartContext.Provider value={{
       cartItems,
       addToCart,
+      addMultipleToCart,
       removeFromCart,
       updateQuantity,
       clearCart,

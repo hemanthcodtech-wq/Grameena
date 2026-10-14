@@ -1,25 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
-import { ChevronRight, Leaf, ShieldCheck, CheckCircle2, Star, Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useWishlist } from '../context/WishlistContext';
+import { ChevronRight, Leaf, ShieldCheck, CheckCircle2, Star, Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight, Heart, MessageSquare, AlertCircle, Loader2, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCachedApi } from '../hooks/useCachedApi';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const scrollRef = useRef(null);
   const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('Ingredients');
   const [mainImg, setMainImg] = useState('');
 
+  // Review states
+  const [reviewsList, setReviewsList] = useState([]);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [reviewError, setReviewError] = useState('');
+
   const { data: allProducts, loading: prodLoading } = useCachedApi('gram_prod', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`, []);
   const { data: catData, loading: catLoading } = useCachedApi('gram_cat', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`, []);
 
   const product = (allProducts || []).find(p => p.id === parseInt(id));
+  const isWishlisted = isInWishlist(product?.id);
   const category = product ? (catData || []).find(c => c.id === product.category_id) : null;
   const relatedProducts = product ? (allProducts || []).filter(p => p.category_id === product.category_id && p.id !== product.id && p.is_active).slice(0, 8) : [];
   
@@ -34,8 +48,75 @@ const ProductDetailsPage = () => {
   useEffect(() => {
     if (product) {
       setMainImg(product.image_url);
+      let revs = [];
+      try {
+        revs = typeof product.reviews === 'string' ? JSON.parse(product.reviews) : (product.reviews || []);
+      } catch {}
+      setReviewsList(Array.isArray(revs) ? revs : []);
     }
   }, [product, id]);
+
+  const handleOpenReviewModal = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Login is compulsory: redirect to login with return path
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
+    setReviewError('');
+    setReviewSuccess('');
+    setIsReviewModalOpen(true);
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      setReviewError('Please share your review experience.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.post(
+        `${apiUrl}/api/products/${product.id}/reviews`,
+        {
+          rating: reviewRating,
+          title: reviewTitle,
+          comment: reviewComment
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (res.data?.review) {
+        setReviewsList(prev => [res.data.review, ...prev]);
+        setReviewSuccess('Thank you! Your review has been submitted successfully.');
+        setReviewComment('');
+        setReviewTitle('');
+        setReviewRating(5);
+        setTimeout(() => {
+          setIsReviewModalOpen(false);
+          setReviewSuccess('');
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Submit review error:', err);
+      setReviewError(err.response?.data?.error || 'Failed to submit review. Please try again.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   if (loading && !product) {
     return (
@@ -60,13 +141,17 @@ const ProductDetailsPage = () => {
   const displayPrice = product.price || (currentSize?.price) || 0;
   const displayWeight = currentSize?.size || 'Standard';
   
-  // Dummy images for gallery
-  const galleryImages = [
-    product.image_url,
-    product.image_url,
-    product.image_url,
-    product.image_url,
-  ];
+  // Parse images gallery from product.images or fallback to product.image_url
+  let galleryImages = [];
+  try {
+    const rawImages = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+    if (Array.isArray(rawImages) && rawImages.length > 0) {
+      galleryImages = rawImages.filter(Boolean);
+    }
+  } catch {}
+  if (galleryImages.length === 0 && product.image_url) {
+    galleryImages = [product.image_url];
+  }
 
   const handleAddToCart = () => {
     addToCart({
@@ -145,10 +230,20 @@ const ProductDetailsPage = () => {
               <span className="text-sm text-gray-500 font-medium">(124 reviews)</span>
             </div>
 
-            <div className="flex items-end gap-3 mb-6">
+            <div className="flex items-baseline gap-3 mb-6">
               <span className="text-3xl sm:text-4xl font-black text-[#113C2B]">₹{displayPrice}</span>
+              {((currentSize?.mrp) || product.mrp) && parseFloat((currentSize?.mrp) || product.mrp) > parseFloat(displayPrice) && (
+                <>
+                  <span className="text-lg text-gray-400 line-through">
+                    ₹{parseFloat((currentSize?.mrp) || product.mrp)}
+                  </span>
+                  <span className="text-xs font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    {Math.round(((parseFloat((currentSize?.mrp) || product.mrp) - parseFloat(displayPrice)) / parseFloat((currentSize?.mrp) || product.mrp)) * 100)}% OFF
+                  </span>
+                </>
+              )}
               {hasSizes && (
-                <span className="text-sm font-bold text-[#113C2B]/60 mb-1.5">({displayWeight})</span>
+                <span className="text-sm font-bold text-[#113C2B]/60">({displayWeight})</span>
               )}
             </div>
 
@@ -189,18 +284,34 @@ const ProductDetailsPage = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+            <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-10">
               <button 
                 onClick={handleAddToCart}
-                className="flex-1 bg-[#113C2B] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1A4B3A] transition-colors shadow-lg"
+                className="flex-1 bg-[#113C2B] text-white py-4 px-6 rounded-xl font-bold text-lg hover:bg-[#1A4B3A] transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
               >
                 Add to Cart
               </button>
               <button 
                 onClick={handleBuyNow}
-                className="flex-1 bg-[#F8B319] text-[#113C2B] py-4 rounded-xl font-bold text-lg hover:bg-[#e09c13] transition-colors shadow-lg"
+                className="flex-1 bg-[#F8B319] text-[#113C2B] py-4 px-6 rounded-xl font-bold text-lg hover:bg-[#e09c13] transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
               >
                 Buy Now
+              </button>
+              <button
+                onClick={() => toggleWishlist({
+                  ...product,
+                  price: displayPrice,
+                  weight: displayWeight
+                })}
+                title={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
+                className={`py-4 px-5 rounded-xl font-bold text-base flex items-center justify-center gap-2 border-2 transition-all shadow-sm ${
+                  isWishlisted
+                    ? 'bg-rose-50 border-red-500 text-red-500'
+                    : 'bg-white border-[#e8dfc8] text-[#113C2B] hover:border-red-400 hover:text-red-500'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+                <span className="hidden xl:inline">{isWishlisted ? 'Saved' : 'Wishlist'}</span>
               </button>
             </div>
 
@@ -243,9 +354,19 @@ const ProductDetailsPage = () => {
           
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e8dfc8]">
             {activeTab === 'Ingredients' && (
-              <ul className="list-disc pl-5 space-y-4 text-gray-600 text-sm sm:text-base leading-relaxed">
-                {product.ingredients ? (
-                  product.ingredients.split('\n').map((line, i) => <li key={i}><span className="font-bold text-[#113C2B]">{line.split(':')[0]}</span> {line.split(':').slice(1).join(':')}</li>)
+              <ul className="list-disc pl-5 space-y-3 text-gray-600 text-sm sm:text-base leading-relaxed">
+                {product.ingredients && product.ingredients.trim() ? (
+                  product.ingredients.split('\n').filter(Boolean).map((line, i) => (
+                    <li key={i}>
+                      {line.includes(':') ? (
+                        <>
+                          <span className="font-bold text-[#113C2B]">{line.split(':')[0]}:</span> {line.split(':').slice(1).join(':')}
+                        </>
+                      ) : (
+                        <span>{line}</span>
+                      )}
+                    </li>
+                  ))
                 ) : (
                   <li><span className="font-bold text-[#113C2B]">Main Ingredients:</span> Locally sourced produce, Mustard Seeds, Fenugreek, Red Chilli, Salt, Sesame Oil, Traditional Spices.</li>
                 )}
@@ -253,13 +374,17 @@ const ProductDetailsPage = () => {
             )}
             
             {activeTab === 'Preparation & Story' && (
-              <ul className="list-disc pl-5 space-y-4 text-gray-600 text-sm sm:text-base leading-relaxed">
+              <ul className="list-disc pl-5 space-y-3 text-gray-600 text-sm sm:text-base leading-relaxed">
                 {product.description ? (
                   <li>{product.description}</li>
                 ) : (
                   <li>Made with authentic Andhra spices using traditional methods passed down through generations.</li>
                 )}
-                {product.precautions && <li><span className="font-bold text-[#113C2B]">Safety:</span> {product.precautions}</li>}
+                {product.precautions && product.precautions.trim() && (
+                  product.precautions.split('\n').filter(Boolean).map((line, i) => (
+                    <li key={i}><span className="font-bold text-[#113C2B]">Safety / Precaution:</span> {line}</li>
+                  ))
+                )}
               </ul>
             )}
 
@@ -284,54 +409,233 @@ const ProductDetailsPage = () => {
           </div>
         </div>
 
-        {/* Customer Reviews Static Section */}
+        {/* Customer Reviews Section */}
         <div className="mb-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#113C2B] mb-2">Customer Reviews</h2>
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-black text-[#113C2B]">4.8</span>
+                <span className="text-3xl font-black text-[#113C2B]">
+                  {(() => {
+                    if (reviewsList.length === 0) return '5.0';
+                    const avg = reviewsList.reduce((sum, r) => sum + (parseFloat(r.rating) || 5), 0) / reviewsList.length;
+                    return avg.toFixed(1);
+                  })()}
+                </span>
                 <div className="flex text-[#F8B319]">
-                  <Star className="w-5 h-5 fill-current" />
-                  <Star className="w-5 h-5 fill-current" />
-                  <Star className="w-5 h-5 fill-current" />
-                  <Star className="w-5 h-5 fill-current" />
-                  <Star className="w-5 h-5 fill-current" />
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-current" />
+                  ))}
                 </div>
               </div>
-              <p className="text-xs font-bold text-[#113C2B]/60 mt-1">Based on 124 reviews</p>
+              <p className="text-xs font-bold text-[#113C2B]/60 mt-1">
+                Based on {reviewsList.length} verified {reviewsList.length === 1 ? 'review' : 'reviews'}
+              </p>
             </div>
-            <button className="px-6 py-2 border-2 border-[#113C2B] text-[#113C2B] font-bold rounded-xl hover:bg-[#113C2B] hover:text-white transition-colors">
-              Write a Review
-            </button>
+            
+            {product.allow_reviews !== false ? (
+              <button 
+                onClick={handleOpenReviewModal}
+                className="px-6 py-2.5 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 self-start sm:self-auto"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Write a Review
+              </button>
+            ) : (
+              <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3.5 py-2 rounded-xl">
+                Reviews currently closed
+              </span>
+            )}
           </div>
 
-          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e8dfc8]">
-            <div className="flex items-start justify-between">
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#113C2B] flex items-center justify-center text-white font-serif font-bold text-xl shrink-0">
-                  S
-                </div>
+          {/* Reviews List */}
+          {reviewsList.length > 0 ? (
+            <div className="space-y-4">
+              {reviewsList.map((rev, idx) => {
+                const userInitial = (rev.user_name || 'C').charAt(0).toUpperCase();
+                const reviewDate = rev.created_at ? new Date(rev.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Verified Customer';
+
+                return (
+                  <div key={rev.id || idx} className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e8dfc8] shadow-xs">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex gap-3.5">
+                        <div className="w-10 h-10 rounded-full bg-[#113C2B] flex items-center justify-center text-white font-serif font-bold text-base shrink-0">
+                          {userInitial}
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-bold text-[#113C2B] text-sm sm:text-base">
+                              {rev.user_name || 'Customer'}
+                            </h4>
+                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                              Verified Buyer
+                            </span>
+                          </div>
+                          
+                          <div className="flex text-[#F8B319] my-1">
+                            {[...Array(5)].map((_, s) => (
+                              <Star 
+                                key={s} 
+                                className={`w-3.5 h-3.5 ${s < (parseInt(rev.rating) || 5) ? 'fill-current' : 'text-gray-200'}`} 
+                              />
+                            ))}
+                          </div>
+
+                          {rev.title && (
+                            <h5 className="font-bold text-xs sm:text-sm text-gray-900 mt-1.5">
+                              {rev.title}
+                            </h5>
+                          )}
+                          <p className="text-gray-600 text-sm mt-1 leading-relaxed">
+                            {rev.comment}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">
+                        {reviewDate}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-8 border border-[#e8dfc8] text-center">
+              <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <h4 className="font-serif font-bold text-[#113C2B] text-lg mb-1">Be the first to review this product!</h4>
+              <p className="text-gray-500 text-xs sm:text-sm max-w-md mx-auto mb-4">
+                Have you enjoyed this traditional recipe? Share your thoughts and culinary experience with other food lovers.
+              </p>
+              {product.allow_reviews !== false && (
+                <button 
+                  onClick={handleOpenReviewModal}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] font-bold rounded-xl text-xs transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Leave a Review
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Write Review Modal */}
+        {isReviewModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#e8dfc8] animate-in fade-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="bg-[#FDF9F1] px-6 py-4 border-b border-[#e8dfc8] flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-[#113C2B] text-sm sm:text-base">Sridevi R. <span className="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full ml-2">Verified</span></h4>
-                  <div className="flex text-[#F8B319] my-1">
-                    <Star className="w-3 h-3 fill-current" />
-                    <Star className="w-3 h-3 fill-current" />
-                    <Star className="w-3 h-3 fill-current" />
-                    <Star className="w-3 h-3 fill-current" />
-                    <Star className="w-3 h-3 fill-current" />
+                  <h3 className="font-serif font-bold text-lg text-[#113C2B]">Write a Review</h3>
+                  <p className="text-[11px] text-[#113C2B]/60 truncate max-w-xs">{product.name}</p>
+                </div>
+                <button 
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleSubmitReview} className="p-6 space-y-4">
+                {reviewError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{reviewError}</span>
                   </div>
-                  <p className="text-gray-600 text-sm mt-2">Amazing taste! Feels like homemade. Will definitely buy again.</p>
-                  <div className="flex gap-2 mt-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#e8dfc8]"><img src={product.image_url} alt="Review" className="w-full h-full object-cover" /></div>
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#e8dfc8]"><img src={product.image_url} alt="Review" className="w-full h-full object-cover" /></div>
+                )}
+
+                {reviewSuccess && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>{reviewSuccess}</span>
+                  </div>
+                )}
+
+                {/* Rating Stars Selection */}
+                <div>
+                  <label className="text-xs font-bold text-[#113C2B] block mb-1.5">Overall Rating</label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="p-1 text-2xl transition-transform hover:scale-110 focus:outline-none"
+                      >
+                        <Star 
+                          className={`w-7 h-7 ${star <= reviewRating ? 'fill-[#F8B319] text-[#F8B319]' : 'text-gray-300'}`} 
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-[#113C2B] ml-2">
+                      {reviewRating === 5 ? '5 - Excellent!' :
+                       reviewRating === 4 ? '4 - Very Good' :
+                       reviewRating === 3 ? '3 - Average' :
+                       reviewRating === 2 ? '2 - Poor' : '1 - Terrible'}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <span className="text-[10px] text-gray-400 font-semibold whitespace-nowrap">12 Aug 2025</span>
+
+                {/* Review Headline / Title */}
+                <div>
+                  <label className="text-xs font-bold text-[#113C2B] block mb-1">Headline (Optional)</label>
+                  <input
+                    type="text"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    placeholder="e.g. Delicious authentic flavor, true homemade taste!"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e8dfc8] text-xs focus:outline-none focus:ring-1 focus:ring-[#113C2B] bg-[#FDF9F1]/50"
+                  />
+                </div>
+
+                {/* Review Comment */}
+                <div>
+                  <label className="text-xs font-bold text-[#113C2B] block mb-1">Your Review *</label>
+                  <textarea
+                    rows={4}
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="What did you like or dislike? How was the aroma, spice level, or quality?"
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e8dfc8] text-xs focus:outline-none focus:ring-1 focus:ring-[#113C2B] bg-[#FDF9F1]/50 resize-none"
+                  />
+                </div>
+
+                <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>You are signed in. Your verified name will appear beside this review.</span>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewModalOpen(false)}
+                    className="flex-1 py-2.5 border border-[#e8dfc8] text-[#113C2B] font-semibold rounded-xl text-xs hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting || !reviewComment.trim()}
+                    className="flex-1 py-2.5 bg-[#113C2B] text-white hover:bg-[#F8B319] hover:text-[#113C2B] font-bold rounded-xl text-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    {reviewSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <span>Submit Review</span>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
+        )}
 
         {/* People Also Bought */}
         {relatedProducts.length > 0 && (

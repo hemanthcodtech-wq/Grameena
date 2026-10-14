@@ -89,6 +89,7 @@ router.post('/login', async (req, res) => {
     const result = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
     if (!result.rows.length) return res.status(401).json({ error: 'Invalid credentials' });
     const user = result.rows[0];
+    if (user.is_blocked) return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
     if (!user.is_verified) return res.status(403).json({ error: 'Please verify your email to continue' });
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
@@ -97,6 +98,117 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/google
+// mode: 'signup' -> directly continues (creates if not existing, or logs in)
+// mode: 'login'  -> checks if existing user is there or not; returns error if not registered
+router.post('/google', async (req, res) => {
+  const { credential, mode = 'login' } = req.body;
+  if (!credential) return res.status(400).json({ error: 'Google credential token is required' });
+
+  try {
+    let googleData = null;
+
+    // 1. Try decoding JWT payload using base64url format
+    try {
+      const parts = credential.split('.');
+      if (parts.length >= 2) {
+        // Replace URL-safe chars and add proper padding
+        let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        const decodedStr = Buffer.from(base64, 'base64').toString('utf8');
+        googleData = JSON.parse(decodedStr);
+      }
+    } catch (e) {
+      console.warn('JWT base64url parse error, falling back to Google tokeninfo:', e.message);
+    }
+
+    // 2. If token payload parse failed or missing email, verify via Google tokeninfo API
+    if (!googleData || !googleData.email) {
+      try {
+        const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`;
+        const gResponse = await fetch(verifyUrl);
+        if (gResponse.ok) {
+          googleData = await gResponse.json();
+        } else {
+          // If id_token fails, try access_token endpoint
+          const accessVerifyUrl = `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${encodeURIComponent(credential)}`;
+          const accessResponse = await fetch(accessVerifyUrl);
+          if (accessResponse.ok) {
+            googleData = await accessResponse.json();
+          }
+        }
+      } catch (fetchErr) {
+        console.error('Google tokeninfo fetch error:', fetchErr.message);
+      }
+    }
+
+    if (!googleData || !googleData.email) {
+      return res.status(400).json({ error: 'Failed to verify Google account details. Please try again.' });
+    }
+
+    const email = (googleData.email || '').toLowerCase().trim();
+    const name = googleData.name || googleData.given_name || email.split('@')[0] || 'Customer';
+    const avatar = googleData.picture || null;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Google account has no associated email address' });
+    }
+
+    // Check if user already exists
+    const userRes = await pool.query('SELECT * FROM users WHERE LOWER(email)=$1', [email]);
+    let user = userRes.rows[0];
+
+    if (mode === 'login') {
+      // In login: must check if existing account is there
+      if (!user) {
+        return res.status(404).json({ 
+          error: 'No account found with this Google email. Please sign up first.',
+          notRegistered: true
+        });
+      }
+      if (user.is_blocked) {
+        return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
+      }
+    } else {
+      // In signup: directly continue!
+      if (!user) {
+        const insertRes = await pool.query(
+          'INSERT INTO users (name, email, avatar_url, role, is_verified, email_verified) VALUES ($1, $2, $3, $4, TRUE, TRUE) RETURNING *',
+          [name, email, avatar, 'user']
+        );
+        user = insertRes.rows[0];
+      } else {
+        if (user.is_blocked) {
+          return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
+        }
+        // Ensure verified status if logging in via Google
+        if (!user.is_verified) {
+          await pool.query('UPDATE users SET is_verified=TRUE, email_verified=TRUE WHERE id=$1', [user.id]);
+          user.is_verified = true;
+        }
+      }
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || null,
+        avatar_url: user.avatar_url,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Google Auth Error:', err);
+    res.status(500).json({ error: 'Google authentication failed: ' + (err.message || 'Server error') });
   }
 });
 
@@ -263,6 +375,35 @@ router.post('/orders', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to place order' });
+  }
+});
+
+// GET /api/auth/orders — customer's orders
+router.get('/orders', authMiddleware, async (req, res) => {
+  try {
+    const orders = await pool.query(
+      'SELECT * FROM orders WHERE user_id=$1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json({ orders: orders.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// GET /api/auth/orders/:id — customer order details
+router.get('/orders/:id', authMiddleware, async (req, res) => {
+  try {
+    const order = await pool.query(
+      'SELECT * FROM orders WHERE (id=$1 OR order_number=$1) AND user_id=$2',
+      [req.params.id, req.user.id]
+    );
+    if (!order.rows.length) return res.status(404).json({ error: 'Order not found' });
+    res.json({ order: order.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch order details' });
   }
 });
 

@@ -9,6 +9,8 @@ const AdminCategoriesPage = () => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +39,7 @@ const AdminCategoriesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
       const payload = {
@@ -47,7 +50,7 @@ const AdminCategoriesPage = () => {
       };
       
       if (editingCategory) {
-        await axios.put(`http://localhost:5000/api/admin/categories/${editingCategory.id}`, payload, {
+        await axios.put(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/categories/${editingCategory.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
@@ -60,19 +63,24 @@ const AdminCategoriesPage = () => {
       fetchData();
     } catch (err) {
       alert('Failed to save category');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure?')) return;
+    setDeletingId(id);
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/categories/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/categories/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchData();
     } catch (err) {
       alert('Failed to delete category');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -130,7 +138,17 @@ const AdminCategoriesPage = () => {
                 }); 
                 setIsModalOpen(true); 
               }} className="p-2 text-grameena-600 hover:bg-grameena-50 rounded-lg transition-colors"><Edit2 className="w-5 h-5" /></button>
-              <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+              <button 
+                onClick={() => handleDelete(c.id)} 
+                disabled={deletingId === c.id}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deletingId === c.id ? (
+                  <div className="w-5 h-5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-5 h-5" />
+                )}
+              </button>
             </div>
           </div>
         )})}
@@ -162,7 +180,20 @@ const AdminCategoriesPage = () => {
               </div>
               <div className="pt-4 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary">Save</button>
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save'
+                  )}
+                </button>
               </div>
             </form>
           </div>

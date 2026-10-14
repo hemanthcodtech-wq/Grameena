@@ -21,6 +21,8 @@
     "multer": "^2.4.0",
     "nodemailer": "^10.0.16",
     "pg": "^8.23.1",
+    "pg-format": "^1.0.4",
+    "puppeteer": "^25.13.0",
     "razorpay": "^2.9.8"
   },
   "devDependencies": {

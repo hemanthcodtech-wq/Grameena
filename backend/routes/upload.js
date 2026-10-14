@@ -23,4 +23,23 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
+router.post('/multiple', upload.array('images', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
+    }
+    const uploadPromises = req.files.map(async (file) => {
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const result = await cloudinary.uploader.upload(dataURI, { folder: 'grameena_uploads' });
+      return result.secure_url;
+    });
+    const urls = await Promise.all(uploadPromises);
+    res.json({ urls });
+  } catch (err) {
+    console.error('Cloudinary multiple upload error:', err);
+    res.status(500).json({ error: 'Failed to upload images' });
+  }
+});
+
 module.exports = router;

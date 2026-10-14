@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const ProductCard = ({ prod, idx, badge }) => {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
+  const isWishlisted = isInWishlist(prod?.id);
   const parsedSizes = typeof prod.sizes === 'string' ? JSON.parse(prod.sizes) : prod.sizes;
   const hasSizes = Array.isArray(parsedSizes) && parsedSizes.length > 0;
   
@@ -22,6 +25,16 @@ const ProductCard = ({ prod, idx, badge }) => {
   const parsedImages = typeof prod.images === 'string' ? JSON.parse(prod.images) : (prod.images || []);
   // Use DB images if available, else fallback to a mix of images so the user can test the carousel!
   const allImages = parsedImages.length > 0 ? parsedImages : [prod.image_url, '/images/pickles.jpg', '/images/snacks.jpg'];
+
+  const handleWishlistClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      ...prod,
+      price: displayPrice,
+      weight: displaySize
+    });
+  };
 
   return (
     <motion.div 
@@ -43,12 +56,29 @@ const ProductCard = ({ prod, idx, badge }) => {
         )}
       </div>
       
-      <button 
-        onClick={(e) => e.stopPropagation()}
-        className="absolute top-2 right-2 sm:top-5 sm:right-5 w-7 h-7 sm:w-10 sm:h-10 bg-white rounded-full shadow-md text-gray-300 hover:text-red-500 flex items-center justify-center z-10 transition-colors"
+      <motion.button 
+        whileTap={{ scale: 0.8 }}
+        whileHover={{ scale: 1.1 }}
+        onClick={handleWishlistClick}
+        aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        className={`absolute top-2 right-2 sm:top-5 sm:right-5 w-7 h-7 sm:w-10 sm:h-10 rounded-full shadow-md flex items-center justify-center z-10 transition-all duration-300 ${
+          isWishlisted 
+            ? 'bg-rose-50 text-red-500 shadow-red-200/50' 
+            : 'bg-white/90 backdrop-blur-sm text-gray-400 hover:text-red-500 hover:bg-white'
+        }`}
       >
-        <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
+        <motion.div
+          animate={isWishlisted ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Heart 
+            className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
+              isWishlisted ? 'fill-red-500 stroke-red-500 text-red-500' : 'stroke-current'
+            }`} 
+          />
+        </motion.div>
+      </motion.button>
       
       <div className={`w-full aspect-[4/3] sm:aspect-square ${badge === 'FESTIVE' ? 'bg-orange-50' : 'bg-[#Fdf9f1]'} rounded-lg sm:rounded-2xl mb-3 sm:mb-6 overflow-hidden relative group/carousel`}>
         <AnimatePresence mode="wait">
@@ -115,7 +145,14 @@ const ProductCard = ({ prod, idx, badge }) => {
         )}
         
         <div className="flex items-center justify-between mt-auto">
-          <div className="text-sm sm:text-2xl font-black text-[#113C2B]">₹{displayPrice}</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm sm:text-2xl font-black text-[#113C2B]">₹{displayPrice}</span>
+            {((currentSize?.mrp) || prod.mrp) && parseFloat((currentSize?.mrp) || prod.mrp) > parseFloat(displayPrice) && (
+              <span className="text-xs sm:text-sm text-gray-400 line-through">
+                ₹{parseFloat((currentSize?.mrp) || prod.mrp)}
+              </span>
+            )}
+          </div>
           <button 
             onClick={(e) => {
               e.stopPropagation();

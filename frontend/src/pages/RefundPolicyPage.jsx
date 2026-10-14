@@ -116,8 +116,11 @@ function AccordionItem({ section, isOpen, toggle }) {
   );
 }
 
+import { useNavigate } from 'react-router-dom';
+
 const RefundPolicyPage = () => {
   const [openIdx, setOpenIdx] = useState(0);
+  const navigate = useNavigate();
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
@@ -137,7 +140,28 @@ const RefundPolicyPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 py-8">
+        {/* Mobile Policy Selector Dropdown */}
+        <div className="block lg:hidden mt-6 bg-white p-4 rounded-2xl border border-[#e8dfc8] shadow-sm space-y-2">
+          <label className="block text-xs font-bold text-[#113C2B] uppercase tracking-wider">
+            Switch Policy:
+          </label>
+          <div className="relative">
+            <select
+              value="/policy/refund"
+              onChange={(e) => navigate(e.target.value)}
+              className="w-full appearance-none bg-[#FAF4E6] border border-[#eedfc0] text-[#113C2B] text-sm font-bold py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#113C2B] cursor-pointer"
+            >
+              <option value="/policy/refund">Refund & Returns Policy</option>
+              <option value="/policy/terms">Terms & Conditions</option>
+              <option value="/policy/privacy">Privacy Policy</option>
+              <option value="/policy/shipping">Shipping & Delivery Policy</option>
+              <option value="/policies">All Policies Hub</option>
+            </select>
+            <ChevronDown className="w-5 h-5 text-[#113C2B] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 py-6 md:py-8">
           {[{ label: 'Return Window', value: '7 Days' }, { label: 'Refund Time', value: '5–7 Days' }, { label: 'Exchange', value: 'Available' }, { label: 'Damaged Items', value: 'Full Refund' }].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
               className="bg-white border border-[#F8B319]/20 rounded-2xl p-4 md:p-5 text-center shadow-sm">

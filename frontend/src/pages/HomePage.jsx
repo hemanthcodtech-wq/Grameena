@@ -49,13 +49,12 @@ const HomePage = () => {
   }, [banners.length]);
 
   // Filter products based on toggles
+  const bestsellingProducts = products.filter(p => p.is_active && p.is_bestseller).slice(0, 4);
   const trendingProducts = products.filter(p => p.is_active && p.is_trending).slice(0, 4);
   const festiveProducts = products.filter(p => p.is_active && p.is_festive).slice(0, 4);
   const offerProducts = products.filter(p => p.is_active && p.is_offer).slice(0, 4);
 
-  const bestsellingProducts = [];
-
-  const testimonials = [
+  const defaultTestimonials = [
     { text: "The mango pickle is just amazing! Tastes exactly like homemade. Reminds me of my grandmother's recipe.", name: "Sridevi", location: "Hyderabad" },
     { text: "Pure and natural oils. I can smell the authenticity as soon as I open the bottle. Highly recommended!", name: "Ramesh", location: "Vijayawada" },
     { text: "Crispy and tasty snacks. My family loves it. Best snacks I've ever ordered online.", name: "Lakshmi", location: "Guntur" },
@@ -63,6 +62,18 @@ const HomePage = () => {
     { text: "We switched to Grameena Bharatham's groundnut oil last month. The aroma is heavenly and the food tastes much better.", name: "Anitha", location: "Chennai" },
     { text: "Absolutely loved the traditional Andhra sweets and Chekkalu. Fast delivery and premium packaging.", name: "Kiran", location: "Visakhapatnam" },
   ];
+
+  const [testimonials, setTestimonials] = useState(defaultTestimonials);
+
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/public/settings`)
+      .then(res => {
+        if (res.data && Array.isArray(res.data.testimonials) && res.data.testimonials.length > 0) {
+          setTestimonials(res.data.testimonials);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="w-full flex flex-col bg-[#FDF9F1] font-sans overflow-hidden">
@@ -168,22 +179,45 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 3. Trending Products */}
-      {trendingProducts.length > 0 && (
-        <section className="w-full py-12 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* 2.5 Bestsellers Section */}
+      {bestsellingProducts.length > 0 && (
+        <section className="w-full py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-end mb-8 md:mb-12">
             <div className="text-left">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#F8B319] bg-[#113C2B] px-2.5 py-1 rounded-md mb-2 inline-block">Customer Favorites</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#113C2B] font-serif mb-2 md:mb-3">Best Sellers</h2>
+              <p className="text-gray-500 text-sm md:text-lg">Most ordered Andhra traditional delicacies</p>
+            </div>
+            <Link to="/products" className="text-[#113C2B] font-bold flex items-center gap-1 hover:text-[#F8B319] transition-colors pb-1 text-sm md:text-base">
+              View All <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+            {bestsellingProducts.map((prod, idx) => (
+              <ProductCard key={prod.id} prod={prod} idx={idx} badge="BESTSELLER" />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Trending Products */}
+      {trendingProducts.length > 0 && (
+        <section className="w-full py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="flex justify-between items-end mb-8 md:mb-12">
+            <div className="text-left">
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-1 rounded-md mb-2 inline-block">Popular This Week</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#113C2B] font-serif mb-2 md:mb-3">Trending Now</h2>
               <p className="text-gray-500 text-sm md:text-lg">Our most loved authentic recipes</p>
             </div>
             <Link to="/products" className="text-[#113C2B] font-bold flex items-center gap-1 hover:text-[#F8B319] transition-colors pb-1 text-sm md:text-base">
-              View <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              View All <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {trendingProducts.map((prod, idx) => (
-              <ProductCard key={prod.id} prod={prod} idx={idx} />
+              <ProductCard key={prod.id} prod={prod} idx={idx} badge="TRENDING" />
             ))}
           </div>
         </section>
@@ -191,14 +225,15 @@ const HomePage = () => {
 
       {/* 3.5 Festive Collection */}
       {festiveProducts.length > 0 && (
-        <section className="w-full py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <section className="w-full py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-end mb-8 md:mb-12">
             <div className="text-left">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-md mb-2 inline-block">Special Edition</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#F8B319] font-serif mb-2 md:mb-3">Festive Collection</h2>
               <p className="text-gray-500 text-sm md:text-lg">Specially curated for your celebrations</p>
             </div>
             <Link to="/products" className="text-[#F8B319] font-bold flex items-center gap-1 hover:text-[#e09c13] transition-colors pb-1 text-sm md:text-base">
-              View <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              View All <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
           </div>
           
