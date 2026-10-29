@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 import heroImg from '../assets/hero.jpg';
 import { useCachedApi } from '../hooks/useCachedApi';
+import { useSEO } from '../hooks/useSEO';
 
 // Animation Variants
 const fadeInUp = {
@@ -23,6 +24,12 @@ const staggerContainer = {
 
 const HomePage = () => {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Authentic Andhra Pickles, Cold Pressed Oils & Traditional Snacks',
+    description: 'Grameena Bharatham delivers authentic Andhra homemade pickles (Avakaya, Gongura), cold-pressed groundnut & sesame oils, and traditional sweets & snacks crafted with grandma recipes.',
+    canonical: 'https://www.grameenabharatham.com/'
+  });
   const { data: rawCategories, loading: catLoading } = useCachedApi('gram_cat', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products/categories/all`, []);
   const { data: products, loading: prodLoading } = useCachedApi('gram_prod', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/products`, []);
   const { data: banners, loading: banLoading } = useCachedApi('gram_ban', `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/public/banners`, []);

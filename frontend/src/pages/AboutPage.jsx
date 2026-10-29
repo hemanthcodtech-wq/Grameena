@@ -2,6 +2,7 @@ import { ArrowRight, Leaf, ShieldCheck, Soup, Utensils, Home, Sparkles, Users, S
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useState, useEffect } from 'react';
+import { useSEO } from '../hooks/useSEO';
 
 // Chainter-inspired animation components
 const CurtainImageReveal = ({ src, alt, className = "", style = {}, height = "400px" }) => {
@@ -74,6 +75,12 @@ const GoldLineDrawing = ({ width = "100px", height = "2px", direction = "center"
 };
 
 const AboutPage = () => {
+  useSEO({
+    title: 'About Us - Our Heritage, Craft & Tradition',
+    description: 'Learn how Grameena Bharatham preserves rural Andhra culinary heritage through traditional stone-grinding, sun-drying, pure cold-pressed oils, and authentic grandma recipes.',
+    canonical: 'https://www.grameenabharatham.com/about'
+  });
+
   const { ref: statsRef, inView: statsInView } = useInView({ triggerOnce: true, threshold: 0.2 });
 
   return (

@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Filter, X, ChevronDown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { useSEO } from '../hooks/useSEO';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
@@ -28,6 +30,12 @@ const CategoryPage = () => {
   const displayCategoryName = categoryName
     ? categoryName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     : 'Category';
+
+  useSEO({
+    title: `${displayCategoryName} - Buy Authentic Homemade`,
+    description: `Shop authentic Andhra ${displayCategoryName} online at Grameena Bharatham. Handcrafted with traditional family recipes and 100% natural ingredients.`,
+    canonical: `https://www.grameenabharatham.com/category/${categoryName}`
+  });
 
   useEffect(() => {
     fetchData();

@@ -3,8 +3,15 @@ import axios from 'axios';
 import { Sparkles, Percent, Tag, ShoppingBag, ArrowRight, Clock, ShieldCheck, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProductCard from '../components/ProductCard';
+import { useSEO } from '../hooks/useSEO';
 
 const OffersPage = () => {
+  useSEO({
+    title: 'Special Offers, Combos & Deals - Save on Authentic Delicacies',
+    description: 'Grab the best discounts on Andhra pickles, cold-pressed oils, and festival snack combos at Grameena Bharatham. Limited time festive coupons and bundle savings.',
+    canonical: 'https://www.grameenabharatham.com/offers'
+  });
+
   const [offers, setOffers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Disallow private user accounts and admin dashboard
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /account
+Disallow: /account/*
+Disallow: /checkout
+Disallow: /order-success
+
+# Sitemaps
+Sitemap: https://www.grameenabharatham.com/sitemap.xml
+

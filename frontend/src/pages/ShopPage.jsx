@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
+import { useSEO } from '../hooks/useSEO';
 
 const ShopPage = () => {
+  useSEO({
+    title: 'Shop All Authentic Delicacies - Pickles, Oils, Snacks',
+    description: 'Explore the complete range of Grameena Bharatham products: authentic Andhra pickles, wood cold-pressed oils, handmade sweets, and traditional savories.',
+    canonical: 'https://www.grameenabharatham.com/products'
+  });
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 

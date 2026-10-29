@@ -2,6 +2,7 @@ import { Phone, Mail, MapPin, ChevronDown, ChevronUp, ArrowRight } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSEO } from '../hooks/useSEO';
 
 // Animation Components
 const FadeInUp = ({ children, delay = 0, className = "" }) => (
@@ -53,6 +54,12 @@ const StaggerItem = ({ children, className = "", style = {} }) => (
 );
 
 const ContactPage = () => {
+  useSEO({
+    title: 'Contact Us - Customer Care & Enquiries',
+    description: 'Get in touch with Grameena Bharatham. Call us at +91 81436 80630 or write to us for bulk orders, order tracking, and support. Located in Guntur, Andhra Pradesh.',
+    canonical: 'https://www.grameenabharatham.com/contact'
+  });
+
   const [openFaq, setOpenFaq] = useState(null);
   const [settings, setSettings] = useState({
     siteName: 'Grameena Bharatham',

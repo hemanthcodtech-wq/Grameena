@@ -6,6 +6,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { ChevronRight, Leaf, ShieldCheck, CheckCircle2, Star, Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight, Heart, MessageSquare, AlertCircle, Loader2, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCachedApi } from '../hooks/useCachedApi';
+import { useSEO } from '../hooks/useSEO';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
@@ -38,6 +39,39 @@ const ProductDetailsPage = () => {
   const relatedProducts = product ? (allProducts || []).filter(p => p.category_id === product.category_id && p.id !== product.id && p.is_active).slice(0, 8) : [];
   
   const loading = prodLoading || catLoading;
+
+  // SEO & Schema for product
+  const productPrice = product?.sizes && product.sizes.length > 0
+    ? (typeof product.sizes === 'string' ? JSON.parse(product.sizes)[selectedSizeIdx]?.price : product.sizes[selectedSizeIdx]?.price) || product.price
+    : product?.price || 0;
+
+  const productSchema = product ? {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    'name': product.name,
+    'image': product.image_url ? [product.image_url] : [],
+    'description': product.description || `Buy fresh authentic ${product.name} online from Grameena Bharatham.`,
+    'brand': {
+      '@type': 'Brand',
+      'name': 'Grameena Bharatham'
+    },
+    'offers': {
+      '@type': 'Offer',
+      'url': `https://www.grameenabharatham.com/product/${product.id}`,
+      'priceCurrency': 'INR',
+      'price': productPrice,
+      'itemCondition': 'https://schema.org/NewCondition',
+      'availability': product.is_active ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+    }
+  } : null;
+
+  useSEO({
+    title: product ? `${product.name} - Buy Authentic Homemade Online` : 'Authentic Delicacy',
+    description: product ? `${product.description ? product.description.slice(0, 150) : `Buy authentic homemade ${product.name} online.`} 100% natural Andhra style delicacies.` : undefined,
+    canonical: product ? `https://www.grameenabharatham.com/product/${product.id}` : undefined,
+    ogImage: product?.image_url,
+    schema: productSchema
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
